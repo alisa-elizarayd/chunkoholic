@@ -1385,8 +1385,6 @@
   padding: 4px 0;
 }
 
-/* Удали старые стили .collection-layout, .folders-sidebar, .collection-main */
-
   /* ===== rest of styles ===== */
   .explorer-toolbar {
     display: flex;
@@ -2779,19 +2777,24 @@
     <p class="section-desc" data-i18n="colDesc">Alle deine gespeicherten Brocken. 💡 Klicke auf ein Wort, um es im Entdecker zu erkunden.</p>
 
     <div class="search-bar">
-      <div class="search-input-wrapper">
-        <span class="search-icon">🔎</span>
-        <input type="text" class="search-input" id="searchInput" placeholder="Brocken suchen…">
-      </div>
-      <button class="btn btn-secondary" id="toggleSelectBtn" onclick="toggleSelectionMode()" style="padding:10px 16px;">☑️ <span data-i18n="selectModeBtn">Wählen</span></button>
-    </div>
+  <div class="search-input-wrapper">
+    <span class="search-icon">🔎</span>
+    <input type="text" class="search-input" id="searchInput" placeholder="Brocken suchen…">
+  </div>
+  <button class="btn btn-secondary" id="toggleSelectBtn" onclick="toggleSelectionMode()" style="padding:10px 16px;">☑️ <span data-i18n="selectModeBtn">Wählen</span></button>
+  <button class="btn btn-secondary" id="importJsonBtn" style="padding:10px 16px;" title="JSON">📤 <span data-i18n="btnImportJson">Import</span></button>
+  <button class="btn btn-secondary" id="exportJsonBtn" style="padding:10px 16px;" title="JSON">📥 <span data-i18n="btnExportJson">Export</span></button>
+</div>
 
     <!-- Folder Bar - horizontal above chunks -->
 <div class="folder-bar">
   <div class="folder-bar-header">
-    <span class="folder-bar-title" data-i18n="foldersTitle">📁 Ordner</span>
+  <span class="folder-bar-title" data-i18n="foldersTitle">📁 Ordner</span>
+  <div style="display:flex;gap:6px;align-items:center;">
+    <button class="new-folder-btn" id="exportFolderBtn" style="background:rgba(212,165,116,0.15);border-color:var(--kirsch-gold);color:var(--kirsch-gold);">📥 <span data-i18n="btnExportSelected">Export</span></button>
     <button class="new-folder-btn" id="newFolderBtn">+ <span data-i18n="folderNew">Neu</span></button>
   </div>
+</div>
   <div id="folderList" class="folder-list-horizontal"></div>
   <div id="folderCreateForm"></div>
 </div>
@@ -2803,6 +2806,8 @@
        <button class="btn btn-secondary" onclick="selectAllVisible()" style="padding:8px 16px; font-size:0.8rem;">☑️ <span data-i18n="selectAll">Alle wählen</span></button>
        <button class="btn btn-secondary" onclick="showBulkTagModal()" style="padding:8px 16px; font-size:0.8rem;">🏷️ <span data-i18n="bulkAddTag">Tag hinzufügen</span></button>
        <button class="btn btn-secondary" onclick="showBulkFolderModal()" style="padding:8px 16px; font-size:0.8rem;">📁 <span data-i18n="bulkMoveFolder">In Ordner verschieben</span></button>
+<button class="btn btn-secondary" onclick="exportSelectedChunks()" style="padding:8px 16px; font-size:0.8rem;">📥 <span data-i18n="btnExportSelected">Export</span></button>
+
        <button class="btn btn-danger" onclick="deleteSelectedChunks()" style="padding:8px 16px; font-size:0.8rem; background:var(--danger); color:white;">🗑️ <span data-i18n="deleteSelected">Löschen</span></button>
        <button class="btn btn-secondary" onclick="toggleSelectionMode()" style="padding:8px 16px; font-size:0.8rem;">✕ <span data-i18n="cancel">Abbrechen</span></button>
     </div>
@@ -2836,10 +2841,49 @@
        <button class="btn btn-secondary" onclick="selectAllExplorer()" style="padding:8px 16px; font-size:0.8rem;">☑️ <span data-i18n="selectAll">Alle wählen</span></button>
        <button class="btn btn-secondary" onclick="showBulkTagModal()" style="padding:8px 16px; font-size:0.8rem;">🏷️ <span data-i18n="bulkAddTag">Tag hinzufügen</span></button>
        <button class="btn btn-secondary" onclick="showBulkFolderModal()" style="padding:8px 16px; font-size:0.8rem;">📁 <span data-i18n="bulkMoveFolder">In Ordner verschieben</span></button>
+<button class="btn btn-secondary" onclick="exportSelectedChunks()" style="padding:8px 16px; font-size:0.8rem;">📥 <span data-i18n="btnExportSelected">Export</span></button>
        <button class="btn btn-danger" onclick="deleteSelectedChunks()" style="padding:8px 16px; font-size:0.8rem; background:var(--danger); color:white;">🗑️ <span data-i18n="deleteSelected">Löschen</span></button>
        <button class="btn btn-secondary" onclick="toggleSelectionMode()" style="padding:8px 16px; font-size:0.8rem;">✕ <span data-i18n="cancel">Abbrechen</span></button>
     </div>
   </div>
+<!-- Export/Import Modal -->
+<div class="modal-overlay" id="exportImportModal">
+  <div class="modal">
+    <h2 id="exportImportTitle">📥 Import</h2>
+    <p id="exportImportDesc" style="color:var(--cream);opacity:0.75;font-size:0.85rem;margin-bottom:16px;">
+      Wähle eine JSON-Datei zum Importieren oder exportiere deine Sammlung.
+    </p>
+
+    <!-- Import section -->
+    <div id="importSection">
+      <label data-i18n="importJsonLabel">JSON-Datei wählen:</label>
+      <input type="file" id="importFileInput" accept=".json,application/json"
+             style="width:100%;padding:12px;background:rgba(0,0,0,0.35);border:2px dashed var(--cocoa);border-radius:10px;color:var(--cream);font-family:'Nunito',sans-serif;font-size:0.9rem;cursor:pointer;margin-bottom:12px;">
+      <div id="importPreview" style="display:none;padding:12px;background:rgba(0,0,0,0.3);border:1px solid var(--cocoa);border-radius:10px;margin-bottom:12px;">
+        <div style="font-size:0.85rem;color:var(--kirsch-gold);font-weight:800;margin-bottom:6px;">
+          <span data-i18n="importPreviewTitle">Vorschau:</span>
+        </div>
+        <div id="importPreviewContent" style="font-size:0.85rem;color:var(--cream);line-height:1.6;"></div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--cream);margin-bottom:16px;cursor:pointer;text-transform:none;letter-spacing:0;">
+        <input type="checkbox" id="importMergeMode" checked style="accent-color:var(--kirsch-gold);width:16px;height:16px;">
+        <span data-i18n="importMergeLabel">Zusammenführen (bestehende Brocken behalten)</span>
+      </label>
+    </div>
+
+    <!-- Export section -->
+    <div id="exportSection" style="display:none;">
+      <p style="color:var(--cream);opacity:0.85;font-size:0.9rem;line-height:1.5;margin-bottom:16px;" id="exportInfoText">
+        Deine Sammlung wird als JSON-Datei heruntergeladen.
+      </p>
+    </div>
+
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-primary" id="exportImportConfirmBtn">OK</button>
+      <button class="btn btn-secondary" id="exportImportCancelBtn" data-i18n="btnCancel">Abbrechen</button>
+    </div>
+  </div>
+</div>
 
 </main>
 
@@ -2884,7 +2928,7 @@
     <input type="text" class="modal-input" id="editVarsInput">
     <label data-i18n="editEx">Beispiele (eines pro Zeile):</label>
     <textarea class="modal-input" id="editExamplesInput" rows="4"></textarea>
-    <label>Tags:</label>
+    <label data-i18n="tagLabel">Tags:</label>
     <div class="tag-chips" id="editTagPicker"></div>
     <div id="editTagCreateForm" style="margin-top:10px;"></div>
     <div class="btn-row" style="margin-top:16px;">
@@ -2900,7 +2944,7 @@
     <p style="color:var(--cream);opacity:0.75;font-size:0.85rem;margin-bottom:16px;" data-i18n="manageTagsDesc">Tags umbenennen, umfärben oder löschen.</p>
     <div class="manage-tags-list" id="manageTagsList"></div>
     <div class="btn-row">
-      <button class="btn btn-primary" id="manageTagsNewBtn">+ <span data-i18n="tagNew">Neuen Tag erstellen</span></button>
+      <button class="btn btn-primary" id="manageTagsNewBtn">+ <span data-i18n="tagManageNew">Neuen Tag erstellen</span></button>
       <button class="btn btn-secondary" id="manageTagsCloseBtn" data-i18n="btnClose">Schließen</button>
     </div>
     <div id="manageTagCreateForm" style="margin-top:16px;"></div>
@@ -2925,7 +2969,7 @@
 <div class="bg-status" id="bgStatus"></div>
 
 <script>
-// ==================== VERB DICTIONARIES (shortened for brevity) ====================
+// ==================== VERB DICTIONARIES ====================
 const VERBS_DE_IRREGULAR = {
   'bin': 'sein', 'bist': 'sein', 'ist': 'sein', 'sind': 'sein', 'seid': 'sein',
   'war': 'sein', 'warst': 'sein', 'wart': 'sein', 'waren': 'sein', 'gewesen': 'sein',
@@ -3076,7 +3120,156 @@ const translations = {
     folderAll: "Alle",
     folderUncategorized: "Ohne Ordner",
     folderDeleteConfirm: "Ordner wirklich löschen? Die enthaltenen Brocken werden nicht gelöscht.",
-    folderNamePlaceholder: "Ordnername…"
+    folderNamePlaceholder: "Ordnername…",
+
+    // === NEW KEYS ===
+    tagLabel: "Tags:",
+    tagPickerEmpty: "Noch keine Tags. Erstelle deinen ersten!",
+    tagCreatePlaceholder: "Tag-Name...",
+    tagCreateBtn: "Erstellen",
+    tagCreatedToast: "erstellt",
+    tagDeletedToast: "gelöscht",
+    tagUpdatedToast: "Tag aktualisiert",
+    tagRemoveToast: "Tag entfernt",
+    tagManageBtn: "🏷️ Tags verwalten",
+    tagAddToSelected: "Tag zu ausgewählten Brocken hinzufügen",
+    bulkTagEmpty: "Noch keine Tags. Erstelle einen neuen!",
+    bulkTagCreateNew: "Neuen Tag erstellen",
+    bulkTagSelectWarn: "Bitte wähle einen Tag aus",
+    bulkTagAllHave: "Alle ausgewählten Brocken haben diesen Tag bereits",
+    bulkTagAddedPrefix: "🏷️ Tag zu",
+    bulkTagAddedSuffix: "Brocken hinzugefügt",
+    tagDeleteConfirmPrefix: "Tag",
+    tagDeleteConfirmSuffix: "löschen?",
+    tagDeleteFromChunks: "Er wird aus",
+    tagDeleteBrocken: "Brocken entfernt.",
+    tagNewBtn: "+ Neuer Tag",
+    tagManageTitle: "🏷️ Tags verwalten",
+    tagManageDesc: "Tags umbenennen, umfärben oder löschen.",
+    tagManageNew: "Neuen Tag erstellen",
+
+    // Folder
+    folderKein: "Kein Ordner",
+    folderDeleteBtn: "Löschen",
+    folderCreatedPrefix: "📁",
+    folderCreatedSuffix: "erstellt",
+    folderDeleteToast: "📁 Ordner gelöscht",
+    folderCreateNew: "Neuen Ordner erstellen",
+    folderCreateBtn: "Erstellen",
+    folderMovePrefix: "📁",
+    folderMoveSuffix: "Brocken verschoben",
+    folderNoChanges: "Keine Änderungen",
+    folderNoFolders: "Keine Ordner. Erstelle deinen ersten!",
+
+    // Add panel
+    chunkSelectHint: "Ausgewählt",
+    wordsSuffix: "Wörter",
+    addAsChunkBtn: "➕ Als Brocken hinzufügen",
+    clearSelectionBtn: "✕ Auswahl löschen",
+    wordsOrderHint: "💡 Die Wörter werden in der Reihenfolge des Textes hinzugefügt.",
+    importAnalyzeFirst: "Bitte füge zuerst Text ein und klicke auf \"Text analysieren\".",
+    importNoText: "⚠️ Bitte füge zuerst Text ein",
+    importAnalyzedPrefix: "🔍 Text analysiert —",
+    importAnalyzedSuffix: "Wörter gefunden",
+    importNoChunksSelected: "⚠️ Keine Brocken ausgewählt",
+    importChunksImportedPrefix: "🍒",
+    importChunksImportedSuffix: "Brocken importiert!",
+    importConfirmRemoveAll: "Alle",
+    importConfirmRemoveAllSuffix: "ausgewählten Brocken entfernen?",
+
+    // Auto candidates
+    autoSelectAll: "✓ Alle auswählen",
+    autoSelectNew: "★ Nur neue",
+    autoDeselectAll: "✕ Alle abwählen",
+    autoSelectedCounter: "ausgewählt",
+    autoAddToSelection: "zur Auswahl hinzufügen",
+    autoNoCandidates: "Keine Auto-Kandidaten gefunden",
+    autoTryManual: "Versuche den manuellen Modus.",
+    autoDeleteWord: "Löschen",
+    autoResetCard: "↩️ Zurücksetzen",
+    autoEditAndAdd: "➕ Bearbeiten & Hinzufügen",
+    autoAlreadyInCollection: "⚠ Bereits in der Sammlung",
+    autoInText: "×",
+    autoInTextSuffix: "im Text",
+    autoModified: "✏️ Bearbeiten",
+
+    // Collection card
+    cardFrame: "Rahmen:",
+    cardAddedPrefix: "Hinzugefügt",
+    cardNext: "Nächste:",
+    cardNotReviewed: "Noch nicht wiederholt",
+    cardExamples: "Beispiele",
+    cardMoreSuffix: "mehr",
+    cardTagRemove: "Tag entfernen",
+    cardFilterAll: "Alle",
+    cardFilter: "Filter:",
+
+    // Explorer
+    explorerComesIn1: "kommt in",
+    explorerComesIn2: "Brocken vor:",
+    explorerAlso: "(auch:",
+    explorerNoChunksWithWord: "Keine Brocken enthalten dieses Wort.",
+    explorerNoWords: "Keine Wörter gefunden. Füge zuerst einige Brocken hinzu!",
+
+    // Practice
+    practiceAllCaughtUp: "Alles aufgeholt!",
+    practiceNoDue: "Momentan sind keine Brocken zur Wiederholung fällig.",
+    practiceAddNew: "✍️ Neuen Brocken hinzufügen",
+    practiceTryRecall: "Versuche, die fehlenden Teile abzurufen…",
+    practiceShowAnswer: "👁️ Antwort zeigen",
+    practiceShowHint: "💡 Tipp zeigen",
+    practiceHideHint: "🙈 Tipp verstecken",
+    practiceHintsTitle: "💡 Tipps aus deinen Beispielen",
+    practiceAgain: "Nochmal",
+    practiceHard: "Schwer",
+    practiceGood: "Gut",
+    practiceEasy: "Leicht",
+
+    // Verb modal
+    verbIrregular: "Unregelmäßig",
+    verbRegular: "Regelmäßig",
+    verbNoneFound: "Keine Verbformen gefunden",
+
+    // Notifications
+    tagUntranslated: "Tag",
+    folderUntranslated: "Ordner",
+    noChunksSelected: "Keine Brocken ausgewählt",
+    tryAnotherFilter: "Versuche eine andere Suche oder Filter.",
+
+ // Export/Import
+    btnExportJson: "Export",
+    btnImportJson: "Import",
+    btnExportSelected: "Export",
+    importJsonLabel: "JSON-Datei wählen:",
+    importPreviewTitle: "Vorschau:",
+    importMergeLabel: "Zusammenführen (bestehende Brocken behalten)",
+    importModalTitle: "📥 Import",
+    importModalDesc: "Wähle eine JSON-Datei zum Importieren.",
+    exportModalTitle: "📤 Export",
+    exportModalDesc: "Deine Sammlung wird als JSON-Datei heruntergeladen.",
+    exportSelectedTitle: "📤 Export",
+    exportSelectedDesc: "Ausgewählte Brocken werden als JSON-Datei heruntergeladen.",
+    exportFolderTitle: "📤 Export",
+    exportFolderDesc: "Brocken aus diesem Ordner werden als JSON-Datei heruntergeladen.",
+    exportAllTitle: "📤 Export",
+    exportAllDesc: "Alle Brocken werden als JSON-Datei heruntergeladen.",
+    exportConfirmBtn: "📥 Herunterladen",
+    importConfirmBtn: "📤 Importieren",
+    exportEmpty: "⚠️ Keine Brocken zum Exportieren",
+    importEmpty: "⚠️ Keine gültigen Brocken in der Datei gefunden",
+    importSuccessPrefix: "✅",
+    importSuccessSuffix: "Brocken importiert",
+    importError: "⚠️ Fehler beim Lesen der JSON-Datei",
+    importPreviewFound: "Gefundene Brocken:",
+    importPreviewTags: "Tags:",
+    importPreviewFolders: "Ordner:",
+    exportDone: "✅ Export abgeschlossen",
+    exportFilePrefix: "chunkoholic_export_",
+    importFileInvalid: "⚠️ Ungültiges Dateiformat. Bitte eine Chunkoholic-JSON-Datei wählen.",
+
+
+    // Manage tags
+    manageTagsItemBrocken: "Brocken"
   },
   en: {
     tagline: "Your chunk collection, one piece at a time",
@@ -3124,7 +3317,156 @@ const translations = {
     folderAll: "All",
     folderUncategorized: "Uncategorized",
     folderDeleteConfirm: "Delete this folder? The chunks inside will not be deleted.",
-    folderNamePlaceholder: "Folder name…"
+    folderNamePlaceholder: "Folder name…",
+
+    // === NEW KEYS ===
+    tagLabel: "Tags:",
+    tagPickerEmpty: "No tags yet. Create your first one!",
+    tagCreatePlaceholder: "Tag name...",
+    tagCreateBtn: "Create",
+    tagCreatedToast: "created",
+    tagDeletedToast: "deleted",
+    tagUpdatedToast: "Tag updated",
+    tagRemoveToast: "Tag removed",
+    tagManageBtn: "🏷️ Manage tags",
+    tagAddToSelected: "Add tag to selected chunks",
+    bulkTagEmpty: "No tags yet. Create a new one!",
+    bulkTagCreateNew: "Create new tag",
+    bulkTagSelectWarn: "Please select a tag",
+    bulkTagAllHave: "All selected chunks already have this tag",
+    bulkTagAddedPrefix: "🏷️ Tag added to",
+    bulkTagAddedSuffix: "chunks",
+    tagDeleteConfirmPrefix: "Tag",
+    tagDeleteConfirmSuffix: "delete?",
+    tagDeleteFromChunks: "It will be removed from",
+    tagDeleteBrocken: "chunks.",
+    tagNewBtn: "+ New tag",
+    tagManageTitle: "🏷️ Manage Tags",
+    tagManageDesc: "Rename, recolor or delete tags.",
+    tagManageNew: "Create new tag",
+
+    // Folder
+    folderKein: "No folder",
+    folderDeleteBtn: "Delete",
+    folderCreatedPrefix: "📁",
+    folderCreatedSuffix: "created",
+    folderDeleteToast: "📁 Folder deleted",
+    folderCreateNew: "Create new folder",
+    folderCreateBtn: "Create",
+    folderMovePrefix: "📁",
+    folderMoveSuffix: "chunks moved",
+    folderNoChanges: "No changes",
+    folderNoFolders: "No folders. Create your first one!",
+
+    // Add panel
+    chunkSelectHint: "Selected",
+    wordsSuffix: "words",
+    addAsChunkBtn: "➕ Add as chunk",
+    clearSelectionBtn: "✕ Clear selection",
+    wordsOrderHint: "💡 Words will be added in text order.",
+    importAnalyzeFirst: "Please paste text first and click \"Analyze Text\".",
+    importNoText: "⚠️ Please paste some text first",
+    importAnalyzedPrefix: "🔍 Text analyzed —",
+    importAnalyzedSuffix: "words found",
+    importNoChunksSelected: "⚠️ No chunks selected",
+    importChunksImportedPrefix: "🍒",
+    importChunksImportedSuffix: "chunks imported!",
+    importConfirmRemoveAll: "Remove all",
+    importConfirmRemoveAllSuffix: "selected chunks?",
+
+    // Auto candidates
+    autoSelectAll: "✓ Select all",
+    autoSelectNew: "★ Only new",
+    autoDeselectAll: "✕ Deselect all",
+    autoSelectedCounter: "selected",
+    autoAddToSelection: "add to selection",
+    autoNoCandidates: "No auto candidates found",
+    autoTryManual: "Try the manual mode.",
+    autoDeleteWord: "Delete",
+    autoResetCard: "↩️ Reset",
+    autoEditAndAdd: "➕ Edit & Add",
+    autoAlreadyInCollection: "⚠ Already in collection",
+    autoInText: "×",
+    autoInTextSuffix: "in text",
+    autoModified: "✏️ Edit",
+
+    // Collection card
+    cardFrame: "Frame:",
+    cardAddedPrefix: "Added",
+    cardNext: "Next:",
+    cardNotReviewed: "Not yet reviewed",
+    cardExamples: "Examples",
+    cardMoreSuffix: "more",
+    cardTagRemove: "Remove tag",
+    cardFilterAll: "All",
+    cardFilter: "Filter:",
+
+    // Explorer
+    explorerComesIn1: "appears in",
+    explorerComesIn2: "chunks:",
+    explorerAlso: "(also:",
+    explorerNoChunksWithWord: "No chunks contain this word.",
+    explorerNoWords: "No words found. Add some chunks first!",
+
+    // Practice
+    practiceAllCaughtUp: "All caught up!",
+    practiceNoDue: "No chunks due for review right now.",
+    practiceAddNew: "✍️ Add New Chunk",
+    practiceTryRecall: "Try to recall the missing parts…",
+    practiceShowAnswer: "👁️ Show Answer",
+    practiceShowHint: "💡 Show Hint",
+    practiceHideHint: "🙈 Hide Hint",
+    practiceHintsTitle: "💡 Hints from your examples",
+    practiceAgain: "Again",
+    practiceHard: "Hard",
+    practiceGood: "Good",
+    practiceEasy: "Easy",
+
+    // Verb modal
+    verbIrregular: "Irregular",
+    verbRegular: "Regular",
+    verbNoneFound: "No verb forms found",
+
+    // Notifications
+    tagUntranslated: "Tag",
+    folderUntranslated: "Folder",
+    noChunksSelected: "No chunks selected",
+    tryAnotherFilter: "Try another search or filter.",
+
+// Export/Import
+    btnExportJson: "Export",
+    btnImportJson: "Import",
+    btnExportSelected: "Export",
+    importJsonLabel: "Choose JSON file:",
+    importPreviewTitle: "Preview:",
+    importMergeLabel: "Merge (keep existing chunks)",
+    importModalTitle: "📥 Import",
+    importModalDesc: "Choose a JSON file to import.",
+    exportModalTitle: "📤 Export",
+    exportModalDesc: "Your collection will be downloaded as a JSON file.",
+    exportSelectedTitle: "📤 Export",
+    exportSelectedDesc: "Selected chunks will be downloaded as a JSON file.",
+    exportFolderTitle: "📤 Export",
+    exportFolderDesc: "Chunks from this folder will be downloaded as a JSON file.",
+    exportAllTitle: "📤 Export",
+    exportAllDesc: "All chunks will be downloaded as a JSON file.",
+    exportConfirmBtn: "📥 Download",
+    importConfirmBtn: "📤 Import",
+    exportEmpty: "⚠️ No chunks to export",
+    importEmpty: "⚠️ No valid chunks found in the file",
+    importSuccessPrefix: "✅",
+    importSuccessSuffix: "chunks imported",
+    importError: "⚠️ Error reading the JSON file",
+    importPreviewFound: "Found chunks:",
+    importPreviewTags: "Tags:",
+    importPreviewFolders: "Folders:",
+    exportDone: "✅ Export complete",
+    exportFilePrefix: "chunkoholic_export_",
+    importFileInvalid: "⚠️ Invalid file format. Please choose a Chunkoholic JSON file.",
+
+
+    // Manage tags
+    manageTagsItemBrocken: "chunks"
   }
 };
 
@@ -3159,6 +3501,8 @@ function setLang(lang) {
   renderFolders();
   renderCollection(searchInput.value);
   updateInfinitivButton();
+  if (document.querySelector('[data-tab="explorer"]').classList.contains('active')) renderExplorer();
+  if (document.querySelector('[data-tab="practice"]').classList.contains('active')) renderPractice();
 }
 
 function toggleLang() {
@@ -3289,7 +3633,7 @@ function deleteFolder(folderId) {
   renderFolders();
   renderCollection(searchInput.value);
   updateStats();
-  showToast('📁 ' + (currentLang === 'de' ? 'Ordner gelöscht' : 'Folder deleted'));
+  showToast(translations[currentLang].folderDeleteToast);
 }
 
 function getFolderCount(folderId) {
@@ -3493,7 +3837,7 @@ let autoCandidateModifications = {};
 function renderInteractiveText() {
   const container = document.getElementById('interactiveText');
   if (!importTokenized) {
-    container.innerHTML = '<span class="tokens-empty">Bitte füge zuerst Text ein und klicke auf "Text analysieren".</span>';
+    container.innerHTML = '<span class="tokens-empty">' + translations[currentLang].importAnalyzeFirst + '</span>';
     return;
   }
   let html = '';
@@ -3530,13 +3874,13 @@ function renderSelectionPreview() {
   const sourceText = importTokenized.sentences[sourceSentIdx].text;
   area.innerHTML = `
     <div class="selection-preview">
-      <div class="selection-preview-label">Ausgewählt (${selectedWords.length} Wörter):</div>
+      <div class="selection-preview-label">${translations[currentLang].chunkSelectHint} (${selectedWords.length} ${translations[currentLang].wordsSuffix}):</div>
       <div class="selection-preview-text">${wordsHtml}</div>
-      <div class="selection-info">💡 Die Wörter werden in der Reihenfolge des Textes hinzugefügt.</div>
+      <div class="selection-info">${translations[currentLang].wordsOrderHint}</div>
       <div style="font-size:0.8rem;color:var(--cream);opacity:0.6;font-style:italic;padding-left:12px;border-left:2px solid var(--cherry);">📖 ${esc(sourceText)}</div>
       <div class="selection-actions">
-        <button class="btn btn-primary" id="addSelectionBtn" style="padding:10px 20px;font-size:0.9rem;">➕ Als Brocken hinzufügen</button>
-        <button class="btn btn-secondary" id="clearSelectionBtn2" style="padding:10px 20px;font-size:0.9rem;">✕ Auswahl löschen</button>
+        <button class="btn btn-primary" id="addSelectionBtn" style="padding:10px 20px;font-size:0.9rem;">${translations[currentLang].addAsChunkBtn}</button>
+        <button class="btn btn-secondary" id="clearSelectionBtn2" style="padding:10px 20px;font-size:0.9rem;">${translations[currentLang].clearSelectionBtn}</button>
       </div>
     </div>`;
   const addBtn = document.getElementById('addSelectionBtn');
@@ -3556,7 +3900,7 @@ function addManualCandidate(selectedWords, sourceText) {
   renderInteractiveText();
   renderSelectionPreview();
   renderManualCandidatesList();
-  showToast(`🍒 "${full}" hinzugefügt`);
+  showToast(`🍒 "${full}" ${translations[currentLang].tagCreatedToast}`);
 }
 
 let draggedToken = null;
@@ -3624,11 +3968,11 @@ function renderManualCandidatesList() {
   list.innerHTML = manualCandidates.map((cand, idx) => {
     const tokensHtml = cand.parts.map((p, i) => `<span class="token ${p.type}" data-idx="${idx}" data-word-idx="${i}">${esc(p.word)}</span>`).join(' ');
     return `<div class="manual-candidate-card" data-idx="${idx}">
-      <div class="mc-header"><div class="mc-chunk">${tokensHtml}</div><button class="mc-remove" data-idx="${idx}" title="Entfernen">✕</button></div>
+      <div class="mc-header"><div class="mc-chunk">${tokensHtml}</div><button class="mc-remove" data-idx="${idx}" title="${translations[currentLang].folderDeleteBtn}">✕</button></div>
       <div class="mc-source">${esc(cand.sentence)}</div>
       <div class="mc-meta">
-        <span class="candidate-badge length">${cand.words.length} Wörter</span>
-        ${cand.isDuplicate ? `<span class="candidate-badge dup">⚠ Bereits in der Sammlung</span>` : ''}
+        <span class="candidate-badge length">${cand.words.length} ${translations[currentLang].wordsSuffix}</span>
+        ${cand.isDuplicate ? `<span class="candidate-badge dup">${translations[currentLang].autoAlreadyInCollection}</span>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -3652,7 +3996,7 @@ function renderManualCandidatesList() {
 }
 
 function importManualCandidates() {
-  if (manualCandidates.length === 0) { showToast('⚠️ Keine Brocken ausgewählt'); return; }
+  if (manualCandidates.length === 0) { showToast(translations[currentLang].importNoChunksSelected); return; }
   let count = 0;
   manualCandidates.forEach(cand => {
     const chunk = { id: generateId(), full: buildFullText(cand.parts), frame: buildFrame(cand.parts), variables: getVariableParts(cand.parts), parts: cand.parts.map(p => ({ ...p })), examples: [cand.sentence], tags: [], folder: null, date: new Date().toISOString(), nextReview: Date.now(), interval: 0, ease: 2.5, repetitions: 0, lastReview: null, status: 'new' };
@@ -3661,7 +4005,7 @@ function importManualCandidates() {
   });
   saveChunks(chunks);
   updateStats();
-  showToast(`🍒 ${count} Brocken importiert!`);
+  showToast(`${translations[currentLang].importChunksImportedPrefix} ${count} ${translations[currentLang].importChunksImportedSuffix}`);
   manualCandidates = [];
   renderManualCandidatesList();
 }
@@ -3669,7 +4013,7 @@ function importManualCandidates() {
 function renderAutoCandidates() {
   const area = document.getElementById('autoCandidatesArea');
   if (autoCandidates.length === 0) {
-    area.innerHTML = `<div class="import-empty"><div class="import-empty-icon">📝</div><h3 class="section-title" style="font-size:1.1rem;">Keine Auto-Kandidaten gefunden</h3><p style="color:var(--cream);opacity:0.7;margin-top:8px;">Versuche den manuellen Modus.</p></div>`;
+    area.innerHTML = `<div class="import-empty"><div class="import-empty-icon">📝</div><h3 class="section-title" style="font-size:1.1rem;">${translations[currentLang].autoNoCandidates}</h3><p style="color:var(--cream);opacity:0.7;margin-top:8px;">${translations[currentLang].autoTryManual}</p></div>`;
     return;
   }
   autoCandidates.forEach((_, idx) => { if (!autoCandidateModifications[idx]) autoCandidateModifications[idx] = { removedWords: new Set(), variableWords: new Set(), isModified: false }; });
@@ -3677,10 +4021,10 @@ function renderAutoCandidates() {
   const total = autoCandidates.length;
   let html = `<div style="font-size:0.8rem;color:var(--kirsch-gold);margin-bottom:12px;font-weight:700;">${translations[currentLang].autoEditHint}</div>
     <div class="import-toolbar"><div class="import-toolbar-left">
-      <button class="import-toolbar-btn" id="autoSelectAllBtn">✓ Alle auswählen</button>
-      <button class="import-toolbar-btn" id="autoSelectNewBtn">★ Nur neue</button>
-      <button class="import-toolbar-btn" id="autoDeselectAllBtn">✕ Alle abwählen</button>
-    </div><div class="import-counter"><strong>${selectedCount}</strong> / ${total} ausgewählt</div></div>
+      <button class="import-toolbar-btn" id="autoSelectAllBtn">${translations[currentLang].autoSelectAll}</button>
+      <button class="import-toolbar-btn" id="autoSelectNewBtn">${translations[currentLang].autoSelectNew}</button>
+      <button class="import-toolbar-btn" id="autoDeselectAllBtn">${translations[currentLang].autoDeselectAll}</button>
+    </div><div class="import-counter"><strong>${selectedCount}</strong> / ${total} ${translations[currentLang].autoSelectedCounter}</div></div>
     <div id="autoCandidatesList">`;
   autoCandidates.forEach((cand, idx) => {
     const isSelected = autoSelected.has(idx);
@@ -3699,19 +4043,19 @@ function renderAutoCandidates() {
         <div class="candidate-chunk">${tokensHtml}</div>
         <div class="candidate-source">${esc(cand.sentence)}</div>
         <div class="candidate-meta">
-          <span class="candidate-badge length">${currentWords.length} Wörter</span>
-          ${cand.count > 1 ? `<span class="candidate-badge">×${cand.count} im Text</span>` : ''}
-          ${cand.isDuplicate ? `<span class="candidate-badge dup">⚠ Bereits in der Sammlung</span>` : ''}
-          ${isModified ? `<span class="candidate-badge modified">✏️ Bearbeiten</span>` : ''}
+          <span class="candidate-badge length">${currentWords.length} ${translations[currentLang].wordsSuffix}</span>
+          ${cand.count > 1 ? `<span class="candidate-badge">${translations[currentLang].autoInText}${cand.count} ${translations[currentLang].autoInTextSuffix}</span>` : ''}
+          ${cand.isDuplicate ? `<span class="candidate-badge dup">${translations[currentLang].autoAlreadyInCollection}</span>` : ''}
+          ${isModified ? `<span class="candidate-badge modified">${translations[currentLang].autoModified}</span>` : ''}
         </div>
         <div class="candidate-actions">
-          <button class="candidate-action-btn add-modified" data-idx="${idx}">➕ Bearbeiten & Hinzufügen</button>
-          ${isModified ? `<button class="candidate-action-btn" data-reset-idx="${idx}">↩️ Zurücksetzen</button>` : ''}
+          <button class="candidate-action-btn add-modified" data-idx="${idx}">${translations[currentLang].autoEditAndAdd}</button>
+          ${isModified ? `<button class="candidate-action-btn" data-reset-idx="${idx}">${translations[currentLang].autoResetCard}</button>` : ''}
         </div>
       </div>
     </div>`;
   });
-  html += `</div><div class="btn-row" style="margin-top:20px;"><button class="btn btn-primary" id="addAutoToManualBtn" ${selectedCount === 0 ? 'disabled' : ''}>➕ ${selectedCount} zur Auswahl hinzufügen</button></div>`;
+  html += `</div><div class="btn-row" style="margin-top:20px;"><button class="btn btn-primary" id="addAutoToManualBtn" ${selectedCount === 0 ? 'disabled' : ''}>➕ ${selectedCount} ${translations[currentLang].autoAddToSelection}</button></div>`;
   area.innerHTML = html;
   area.querySelectorAll('.candidate-checkbox').forEach(cb => {
     cb.addEventListener('change', (e) => { const idx = parseInt(e.target.dataset.idx); if (e.target.checked) autoSelected.add(idx); else autoSelected.delete(idx); renderAutoCandidates(); });
@@ -3768,7 +4112,7 @@ function addModifiedAutoCandidate(idx) {
   autoCandidateModifications[idx] = { removedWords: new Set(), variableWords: new Set(), isModified: false };
   renderAutoCandidates();
   renderManualCandidatesList();
-  showToast(`🍒 "${currentFull}" hinzugefügt`);
+  showToast(`🍒 "${currentFull}" ${translations[currentLang].tagCreatedToast}`);
 }
 
 function addAutoSelectedToManual() {
@@ -3786,7 +4130,7 @@ function addAutoSelectedToManual() {
   autoSelected.clear();
   renderAutoCandidates();
   renderManualCandidatesList();
-  showToast(`➕ ${count} zur Auswahl hinzugefügt`);
+  showToast(`➕ ${count} ${translations[currentLang].autoAddToSelection}`);
 }
 
 let chunks = loadChunks().map(migrateChunk);
@@ -3853,21 +4197,18 @@ const verbList = $('verbList');
 const verbApplyBtn = $('verbApplyBtn');
 const verbSkipBtn = $('verbSkipBtn');
 
-// Bulk tag modal elements
 const bulkTagModal = $('bulkTagModal');
 const bulkTagPicker = $('bulkTagPicker');
 const bulkTagCreateForm = $('bulkTagCreateForm');
 const bulkTagApplyBtn = $('bulkTagApplyBtn');
 const bulkTagCancelBtn = $('bulkTagCancelBtn');
 
-// Bulk folder modal elements
 const bulkFolderModal = $('bulkFolderModal');
 const bulkFolderPicker = $('bulkFolderPicker');
 const bulkFolderCreateForm = $('bulkFolderCreateForm');
 const bulkFolderApplyBtn = $('bulkFolderApplyBtn');
 const bulkFolderCancelBtn = $('bulkFolderCancelBtn');
 
-// Folder UI elements
 const folderList = $('folderList');
 const folderCreateForm = $('folderCreateForm');
 const newFolderBtn = $('newFolderBtn');
@@ -3921,7 +4262,7 @@ function selectAllExplorer() {
 
 function deleteSelectedChunks() {
   if (selectedChunkIds.size === 0) return;
-  if (!confirm(translations[currentLang].confirmRemoveAll.replace('All', selectedChunkIds.size))) return;
+  if (!confirm(translations[currentLang].confirmRemoveAll)) return;
   chunks = chunks.filter(c => !selectedChunkIds.has(c.id));
   saveChunks(chunks);
   updateStats();
@@ -3935,14 +4276,14 @@ function deleteSelectedChunks() {
 
 // ==================== BULK TAG FUNCTIONS ====================
 function showBulkTagModal() {
-  if (selectedChunkIds.size === 0) { showToast('⚠️ ' + (currentLang === 'de' ? 'Keine Brocken ausgewählt' : 'No chunks selected')); return; }
+  if (selectedChunkIds.size === 0) { showToast('⚠️ ' + translations[currentLang].noChunksSelected); return; }
   renderBulkTagPicker();
   bulkTagModal.classList.add('show');
 }
 
 function renderBulkTagPicker() {
   if (tags.length === 0) {
-    bulkTagPicker.innerHTML = '<span class="tags-empty">' + (currentLang === 'de' ? 'Noch keine Tags. Erstelle einen neuen!' : 'No tags yet. Create one!') + '</span>';
+    bulkTagPicker.innerHTML = '<span class="tags-empty">' + translations[currentLang].bulkTagEmpty + '</span>';
   } else {
     bulkTagPicker.innerHTML = tags.map(tag => {
       const textColor = getContrastColor(tag.color);
@@ -3954,7 +4295,7 @@ function renderBulkTagPicker() {
   }
   const createBtn = document.createElement('button');
   createBtn.className = 'new-tag-btn';
-  createBtn.textContent = '+ ' + (currentLang === 'de' ? 'Neuen Tag erstellen' : 'Create new tag');
+  createBtn.textContent = '+ ' + translations[currentLang].bulkTagCreateNew;
   createBtn.style.marginTop = '10px';
   createBtn.addEventListener('click', () => {
     if (bulkTagCreateForm.innerHTML) { bulkTagCreateForm.innerHTML = ''; return; }
@@ -3972,14 +4313,14 @@ function renderBulkTagPicker() {
 bulkTagApplyBtn.addEventListener('click', () => {
   const selectedChip = bulkTagPicker.querySelector('.tag-chip.selected');
   let tagId = selectedChip ? selectedChip.dataset.tagId : null;
-  if (!tagId) { showToast('⚠️ ' + (currentLang === 'de' ? 'Bitte wähle einen Tag aus' : 'Please select a tag')); return; }
+  if (!tagId) { showToast('⚠️ ' + translations[currentLang].bulkTagSelectWarn); return; }
   let count = 0;
   selectedChunkIds.forEach(id => {
     const chunk = chunks.find(c => c.id === id);
     if (chunk) { if (!chunk.tags) chunk.tags = []; if (!chunk.tags.includes(tagId)) { chunk.tags.push(tagId); count++; } }
   });
-  if (count > 0) { saveChunks(chunks); updateStats(); showToast(`🏷️ ${currentLang === 'de' ? 'Tag zu' : 'Tag added to'} ${count} ${currentLang === 'de' ? 'Brocken hinzugefügt' : 'chunks'}`); renderCollection(searchInput.value); renderExplorer(); }
-  else { showToast('ℹ️ ' + (currentLang === 'de' ? 'Alle ausgewählten Brocken haben diesen Tag bereits' : 'All selected chunks already have this tag')); }
+  if (count > 0) { saveChunks(chunks); updateStats(); showToast(`${translations[currentLang].bulkTagAddedPrefix} ${count} ${translations[currentLang].bulkTagAddedSuffix}`); renderCollection(searchInput.value); renderExplorer(); }
+  else { showToast('ℹ️ ' + translations[currentLang].bulkTagAllHave); }
   bulkTagModal.classList.remove('show');
   bulkTagCreateForm.innerHTML = '';
 });
@@ -3989,13 +4330,13 @@ bulkTagModal.addEventListener('click', (e) => { if (e.target === bulkTagModal) {
 
 // ==================== BULK FOLDER FUNCTIONS ====================
 function showBulkFolderModal() {
-  if (selectedChunkIds.size === 0) { showToast('⚠️ ' + (currentLang === 'de' ? 'Keine Brocken ausgewählt' : 'No chunks selected')); return; }
+  if (selectedChunkIds.size === 0) { showToast('⚠️ ' + translations[currentLang].noChunksSelected); return; }
   renderBulkFolderPicker();
   bulkFolderModal.classList.add('show');
 }
 
 function renderBulkFolderPicker() {
-  const allFolders = [{ id: null, name: currentLang === 'de' ? 'Kein Ordner' : 'No folder' }, ...folders];
+  const allFolders = [{ id: null, name: translations[currentLang].folderKein }, ...folders];
   bulkFolderPicker.innerHTML = allFolders.map(folder => {
     const count = folder.id ? getFolderCount(folder.id) : chunks.filter(c => !c.folder).length;
     const isSelected = activeFolderFilter === folder.id;
@@ -4006,10 +4347,9 @@ function renderBulkFolderPicker() {
   bulkFolderPicker.querySelectorAll('.tag-chip').forEach(chip => {
     chip.addEventListener('click', () => { bulkFolderPicker.querySelectorAll('.tag-chip').forEach(c => c.classList.remove('selected')); chip.classList.add('selected'); });
   });
-  // Create new folder button
   const createBtn = document.createElement('button');
   createBtn.className = 'new-folder-btn';
-  createBtn.textContent = '+ ' + (currentLang === 'de' ? 'Neuen Ordner erstellen' : 'Create new folder');
+  createBtn.textContent = '+ ' + translations[currentLang].folderCreateNew;
   createBtn.style.marginTop = '10px';
   createBtn.addEventListener('click', () => {
     if (bulkFolderCreateForm.innerHTML) { bulkFolderCreateForm.innerHTML = ''; return; }
@@ -4033,8 +4373,8 @@ bulkFolderApplyBtn.addEventListener('click', () => {
     const chunk = chunks.find(c => c.id === id);
     if (chunk) { if (chunk.folder !== folderId) { chunk.folder = folderId; count++; } }
   });
-  if (count > 0) { saveChunks(chunks); updateStats(); showToast(`📁 ${count} ${currentLang === 'de' ? 'Brocken verschoben' : 'chunks moved'}`); renderFolders(); renderCollection(searchInput.value); renderExplorer(); }
-  else { showToast('ℹ️ ' + (currentLang === 'de' ? 'Keine Änderungen' : 'No changes')); }
+  if (count > 0) { saveChunks(chunks); updateStats(); showToast(`${translations[currentLang].folderMovePrefix} ${count} ${translations[currentLang].folderMoveSuffix}`); renderFolders(); renderCollection(searchInput.value); renderExplorer(); }
+  else { showToast('ℹ️ ' + translations[currentLang].folderNoChanges); }
   bulkFolderModal.classList.remove('show');
   bulkFolderCreateForm.innerHTML = '';
 });
@@ -4042,8 +4382,304 @@ bulkFolderApplyBtn.addEventListener('click', () => {
 bulkFolderCancelBtn.addEventListener('click', () => { bulkFolderModal.classList.remove('show'); bulkFolderCreateForm.innerHTML = ''; });
 bulkFolderModal.addEventListener('click', (e) => { if (e.target === bulkFolderModal) { bulkFolderModal.classList.remove('show'); bulkFolderCreateForm.innerHTML = ''; } });
 
-// ==================== FOLDER UI ====================
+// ==================== EXPORT / IMPORT ====================
+let importPendingData = null;
+let exportImportMode = 'import'; // 'import' | 'export'
+let exportPendingChunks = null;
+let exportPendingTitle = '';
 
+function exportChunksToFile(chunkList, filenameSuffix) {
+  if (!chunkList || chunkList.length === 0) {
+    showToast(translations[currentLang].exportEmpty);
+    return;
+  }
+
+  // Используем только необходимые поля — не экспортируем SRS-состояние и id, чтобы не конфликтовать при импорте
+  const exportData = {
+    app: 'chunkoholic',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    chunks: chunkList.map(c => ({
+      full: c.full,
+      frame: c.frame,
+      variables: c.variables || [],
+      parts: (c.parts || []).map(p => ({ word: p.word, type: p.type })),
+      examples: c.examples || [],
+      tags: (c.tags || []).map(tagId => {
+        const t = getTagById(tagId);
+        return t ? { name: t.name, color: t.color } : null;
+      }).filter(Boolean),
+      folder: c.folder ? (folders.find(f => f.id === c.folder)?.name || null) : null,
+      date: c.date
+    })),
+    tags: tags.map(t => ({ name: t.name, color: t.color })),
+    folders: folders.map(f => ({ name: f.name }))
+  };
+
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dateStr = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `${translations[currentLang].exportFilePrefix}${filenameSuffix || 'all'}_${dateStr}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  showToast(translations[currentLang].exportDone);
+}
+
+//фукнция 
+
+function openExportModal(chunkList, titleKey, descKey, suffix) {
+  if (!chunkList || chunkList.length === 0) {
+    showToast(translations[currentLang].exportEmpty);
+    return;
+  }
+  
+  exportImportMode = 'export';
+  exportPendingChunks = chunkList;
+  exportPendingTitle = titleKey;
+
+  document.getElementById('exportImportTitle').textContent = translations[currentLang][titleKey] || '📤 Export';
+  document.getElementById('exportImportDesc').textContent = translations[currentLang][descKey] || '';
+  document.getElementById('importSection').style.display = 'none';
+  document.getElementById('exportSection').style.display = 'block';
+  document.getElementById('exportInfoText').textContent = translations[currentLang][descKey] || '';
+  document.getElementById('exportImportConfirmBtn').textContent = translations[currentLang].exportConfirmBtn;
+  document.getElementById('exportImportConfirmBtn').disabled = false;
+
+  const confirmBtn = document.getElementById('exportImportConfirmBtn');
+  const freshBtn = confirmBtn.cloneNode(true);
+  freshBtn.disabled = false; // гарантируем что кнопка активна
+  confirmBtn.parentNode.replaceChild(freshBtn, confirmBtn);
+  freshBtn.addEventListener('click', () => {
+    if (exportPendingChunks && exportPendingChunks.length > 0) {
+      exportChunksToFile(exportPendingChunks, suffix);
+      document.getElementById('exportImportModal').classList.remove('show');
+    }
+  });
+
+  document.getElementById('exportImportModal').classList.add('show');
+}
+
+function exportSelectedChunks() {
+  const list = chunks.filter(c => selectedChunkIds.has(c.id));
+  openExportModal(list, 'exportSelectedTitle', 'exportSelectedDesc', 'selected');
+}
+
+function exportFolderChunks() {
+  let list;
+  if (activeFolderFilter === 'uncategorized') {
+    list = chunks.filter(c => !c.folder);
+  } else if (activeFolderFilter) {
+    list = chunks.filter(c => c.folder === activeFolderFilter);
+  } else {
+    list = chunks.slice();
+  }
+  const folderName = activeFolderFilter && activeFolderFilter !== 'uncategorized'
+    ? (folders.find(f => f.id === activeFolderFilter)?.name || 'folder')
+    : (activeFolderFilter === 'uncategorized' ? 'uncategorized' : 'all');
+  openExportModal(list, 'exportFolderTitle', 'exportFolderDesc', folderName.replace(/[^a-z0-9_-]/gi, '_'));
+}
+
+function exportAllChunks() {
+  openExportModal(chunks.slice(), 'exportAllTitle', 'exportAllDesc', 'all');
+}
+
+function openImportModal() {
+  exportImportMode = 'import';
+  importPendingData = null;
+  document.getElementById('exportImportTitle').textContent = translations[currentLang].importModalTitle || '📥 Import';
+  document.getElementById('exportImportDesc').textContent = translations[currentLang].importModalDesc || '';
+  document.getElementById('importSection').style.display = 'block';
+  document.getElementById('exportSection').style.display = 'none';
+  document.getElementById('importFileInput').value = '';
+  document.getElementById('importPreview').style.display = 'none';
+  document.getElementById('importPreviewContent').innerHTML = '';
+  document.getElementById('exportImportConfirmBtn').textContent = translations[currentLang].importConfirmBtn || '📤 Import';
+  document.getElementById('exportImportConfirmBtn').disabled = true;
+
+  const confirmBtn = document.getElementById('exportImportConfirmBtn');
+  const freshBtn = confirmBtn.cloneNode(true);
+  confirmBtn.parentNode.replaceChild(freshBtn, confirmBtn);
+  freshBtn.addEventListener('click', () => {
+    if (importPendingData) {
+      doImportChunks(importPendingData, document.getElementById('importMergeMode').checked);
+      document.getElementById('exportImportModal').classList.remove('show');
+    }
+  });
+
+  document.getElementById('exportImportModal').classList.add('show');
+}
+
+function handleImportFileSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      // Поддержка обоих форматов: {chunks:[...]} или просто массив
+      let chunkArr;
+      if (Array.isArray(data)) chunkArr = data;
+      else if (data && Array.isArray(data.chunks)) chunkArr = data.chunks;
+      else {
+        showToast(translations[currentLang].importFileInvalid);
+        return;
+      }
+      if (chunkArr.length === 0) {
+        showToast(translations[currentLang].importEmpty);
+        return;
+      }
+      // Валидация: каждый элемент должен иметь full
+      const valid = chunkArr.filter(c => c && typeof c.full === 'string' && c.full.trim().length > 0);
+      if (valid.length === 0) {
+        showToast(translations[currentLang].importEmpty);
+        return;
+      }
+      importPendingData = data;
+
+      // Превью
+      const tagCount = (data.tags || []).length;
+      const folderCount = (data.folders || []).length;
+      document.getElementById('importPreviewContent').innerHTML = `
+        <div>📦 <strong>${valid.length}</strong> ${translations[currentLang].importPreviewFound}</div>
+        ${tagCount > 0 ? `<div>🏷️ ${translations[currentLang].importPreviewTags} ${tagCount}</div>` : ''}
+        ${folderCount > 0 ? `<div>📁 ${translations[currentLang].importPreviewFolders} ${folderCount}</div>` : ''}
+      `;
+      document.getElementById('importPreview').style.display = 'block';
+      document.getElementById('exportImportConfirmBtn').disabled = false;
+    } catch (err) {
+      console.error(err);
+      showToast(translations[currentLang].importError);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function doImportChunks(data, mergeMode) {
+  let chunkArr;
+  if (Array.isArray(data)) chunkArr = data;
+  else chunkArr = data.chunks || [];
+
+  const validChunks = chunkArr.filter(c => c && typeof c.full === 'string' && c.full.trim().length > 0);
+
+  if (!mergeMode) {
+    // Полная замена
+    chunks = [];
+    tags = [];
+    folders = [];
+  }
+
+  // --- Теги ---
+  const tagNameToId = {};
+  tags.forEach(t => { tagNameToId[t.name.toLowerCase()] = t.id; });
+
+  const importedTags = Array.isArray(data.tags) ? data.tags : [];
+  importedTags.forEach(t => {
+    if (!t || !t.name) return;
+    const key = t.name.toLowerCase();
+    if (!tagNameToId[key]) {
+      const newTag = { id: generateId(), name: t.name, color: t.color || getNextDefaultColor(), createdAt: Date.now() };
+      tags.push(newTag);
+      tagNameToId[key] = newTag.id;
+    }
+  });
+
+  // --- Папки ---
+  const folderNameToId = {};
+  folders.forEach(f => { folderNameToId[f.name.toLowerCase()] = f.id; });
+
+  const importedFolders = Array.isArray(data.folders) ? data.folders : [];
+  importedFolders.forEach(f => {
+    if (!f || !f.name) return;
+    const key = f.name.toLowerCase();
+    if (!folderNameToId[key]) {
+      const newFolder = { id: generateId(), name: f.name, createdAt: Date.now() };
+      folders.push(newFolder);
+      folderNameToId[key] = newFolder.id;
+    }
+  });
+
+  // --- Чанки ---
+  // Для merge-режима: строим множество существующих full-текстов
+  const existingFull = new Set(chunks.map(c => c.full.toLowerCase().trim()));
+
+  let importedCount = 0;
+
+  validChunks.forEach(c => {
+    const fullKey = c.full.toLowerCase().trim();
+
+    if (mergeMode && existingFull.has(fullKey)) {
+      // Пропускаем дубликат
+      return;
+    }
+
+    // Восстановить parts (если есть) или пересобрать из full/variables
+    let parts;
+    if (Array.isArray(c.parts) && c.parts.length > 0) {
+      parts = c.parts.map(p => ({ word: p.word, type: p.type === 'variable' ? 'variable' : 'fixed' }));
+    } else {
+      const vars = Array.isArray(c.variables) ? c.variables.map(v => v.toLowerCase()) : [];
+      const words = String(c.full).split(/\s+/).filter(Boolean);
+      parts = words.map(w => ({ word: w, type: vars.includes(w.toLowerCase()) ? 'variable' : 'fixed' }));
+    }
+
+    // Теги: преобразуем names → ids
+    const chunkTagIds = [];
+    if (Array.isArray(c.tags)) {
+      c.tags.forEach(t => {
+        const name = typeof t === 'string' ? t : (t && t.name);
+        if (!name) return;
+        const key = name.toLowerCase();
+        if (tagNameToId[key]) chunkTagIds.push(tagNameToId[key]);
+      });
+    }
+
+    // Папка
+    let folderId = null;
+    if (c.folder) {
+      const key = String(c.folder).toLowerCase();
+      if (folderNameToId[key]) folderId = folderNameToId[key];
+    }
+
+    const newChunk = {
+      id: generateId(),
+      full: c.full,
+      frame: c.frame || buildFrame(parts),
+      variables: c.variables || getVariableParts(parts),
+      parts,
+      examples: Array.isArray(c.examples) ? c.examples.filter(Boolean) : [],
+      tags: chunkTagIds,
+      folder: folderId,
+      date: c.date || new Date().toISOString(),
+      nextReview: Date.now(),
+      interval: 0,
+      ease: 2.5,
+      repetitions: 0,
+      lastReview: null,
+      status: 'new'
+    };
+
+    chunks.unshift(newChunk);
+    existingFull.add(fullKey);
+    importedCount++;
+  });
+
+  saveChunks(chunks);
+  saveTags(tags);
+  saveFolders(folders);
+  updateStats();
+  renderFolders();
+  refreshAddTagPicker();
+  renderCollection(searchInput.value);
+
+  showToast(`${translations[currentLang].importSuccessPrefix} ${importedCount} ${translations[currentLang].importSuccessSuffix}`);
+}
+
+// ==================== FOLDER UI ====================
 function renderFolders() {
   const allCount = chunks.length;
   const uncategorizedCount = chunks.filter(c => !c.folder).length;
@@ -4051,12 +4687,12 @@ function renderFolders() {
   let html = `
     <span class="folder-item-h ${activeFolderFilter === null ? 'active' : ''}" data-folder-id="">
       <span class="folder-icon">📁</span>
-      Alle
+      ${translations[currentLang].folderAll}
       <span class="folder-count">${allCount}</span>
     </span>
     <span class="folder-item-h ${activeFolderFilter === 'uncategorized' ? 'active' : ''}" data-folder-id="uncategorized">
       <span class="folder-icon">📂</span>
-      Ohne Ordner
+      ${translations[currentLang].folderUncategorized}
       <span class="folder-count">${uncategorizedCount}</span>
     </span>`;
   
@@ -4067,23 +4703,20 @@ function renderFolders() {
       ${esc(folder.name)}
       <span class="folder-count">${count}</span>
       <span class="folder-actions">
-        <button class="delete" onclick="event.stopPropagation(); deleteFolder('${folder.id}')" title="${currentLang === 'de' ? 'Löschen' : 'Delete'}">✕</button>
+        <button class="delete" onclick="event.stopPropagation(); deleteFolder('${folder.id}')" title="${translations[currentLang].folderDeleteBtn}">✕</button>
       </span>
     </span>`;
   });
   
-  // Если папок нет, показываем подсказку
   if (folders.length === 0) {
-    html += `<span class="folder-empty">${currentLang === 'de' ? 'Keine Ordner. Erstelle deinen ersten!' : 'No folders. Create your first one!'}</span>`;
+    html += `<span class="folder-empty">${translations[currentLang].folderNoFolders}</span>`;
   }
   
   folderList.innerHTML = html;
   
   folderList.querySelectorAll('.folder-item-h').forEach(item => {
     item.addEventListener('click', (e) => {
-      // Игнорируем клик по кнопке удаления
       if (e.target.closest('.delete')) return;
-      
       const folderId = item.dataset.folderId;
       if (folderId === '') activeFolderFilter = null;
       else if (folderId === 'uncategorized') activeFolderFilter = 'uncategorized';
@@ -4094,13 +4727,12 @@ function renderFolders() {
   });
 }
 
-
 function renderFolderCreateForm(container, onCreated) {
   container.innerHTML = `
     <div class="folder-create-form">
       <input type="text" class="folder-name-input" placeholder="${translations[currentLang].folderNamePlaceholder}" maxlength="40">
       <div class="folder-form-btns">
-        <button class="folder-form-btn confirm" disabled>✓ ${currentLang === 'de' ? 'Erstellen' : 'Create'}</button>
+        <button class="folder-form-btn confirm" disabled>✓ ${translations[currentLang].folderCreateBtn}</button>
         <button class="folder-form-btn cancel">✕</button>
       </div>
     </div>`;
@@ -4117,7 +4749,7 @@ function renderFolderCreateForm(container, onCreated) {
     const folder = createFolder(name);
     close();
     if (onCreated) onCreated(folder);
-    showToast(`📁 "${folder.name}" ${currentLang === 'de' ? 'erstellt' : 'created'}`);
+    showToast(`${translations[currentLang].folderCreatedPrefix} "${folder.name}" ${translations[currentLang].folderCreatedSuffix}`);
   }
   function close() { container.innerHTML = ''; }
   setTimeout(() => nameInput.focus(), 50);
@@ -4130,7 +4762,7 @@ newFolderBtn.addEventListener('click', () => {
 
 function renderTagPicker(container, createFormContainer, selectedTagsSet, onChange) {
   if (tags.length === 0) {
-    container.innerHTML = '<span class="tags-empty">Noch keine Tags. Erstelle deinen ersten!</span>';
+    container.innerHTML = '<span class="tags-empty">' + translations[currentLang].tagPickerEmpty + '</span>';
   } else {
     container.innerHTML = tags.map(tag => {
       const isSelected = selectedTagsSet.has(tag.id);
@@ -4154,9 +4786,9 @@ function renderTagCreateForm(container, onCreated) {
   const defaultColor = getNextDefaultColor();
   container.innerHTML = `
     <div class="tag-create-form">
-      <input type="text" class="tag-name-input" placeholder="Tag-Name..." maxlength="30">
+      <input type="text" class="tag-name-input" placeholder="${translations[currentLang].tagCreatePlaceholder}" maxlength="30">
       <div class="color-picker-wrapper" style="background:${defaultColor};"><input type="color" value="${defaultColor}"></div>
-      <button class="tag-form-btn confirm" disabled>✓ Erstellen</button>
+      <button class="tag-form-btn confirm" disabled>✓ ${translations[currentLang].tagCreateBtn}</button>
       <button class="tag-form-btn cancel"></button>
     </div>`;
   const nameInput = container.querySelector('.tag-name-input');
@@ -4175,7 +4807,7 @@ function renderTagCreateForm(container, onCreated) {
     const tag = createTag(name, colorInput.value);
     close();
     if (onCreated) onCreated(tag);
-    showToast(`️ Tag "${tag.name}" erstellt`);
+    showToast(`️ ${translations[currentLang].tagUntranslated} "${tag.name}" ${translations[currentLang].tagCreatedToast}`);
   }
   function close() { container.innerHTML = ''; }
   setTimeout(() => nameInput.focus(), 50);
@@ -4213,7 +4845,7 @@ chunkInput.addEventListener('input', () => {
 
 function renderTokens() {
   if (currentParts.length === 0) {
-    tokensContainer.innerHTML = '<span class="tokens-empty">Beginne oben zu tippen…</span>';
+    tokensContainer.innerHTML = '<span class="tokens-empty">' + translations[currentLang].tokensEmpty + '</span>';
     framePreview.style.display = 'none';
     saveBtn.disabled = true;
     return;
@@ -4244,7 +4876,7 @@ function updateInfinitivButton() {
 
 function runVerbNormalization() {
   const suggestions = detectVerbForms(currentParts);
-  if (suggestions.length === 0) { showToast(currentLang === 'de' ? 'Keine Verbformen gefunden' : 'No verb forms found'); return; }
+  if (suggestions.length === 0) { showToast(translations[currentLang].verbNoneFound); return; }
   showVerbNormalizeModal(suggestions, (applied) => { if (applied) { renderTokens(); updateInfinitivButton(); } });
 }
 
@@ -4255,7 +4887,7 @@ function showVerbNormalizeModal(suggestions, callback) {
       <input type="checkbox" checked data-idx="${i}">
       <div class="verb-content">
         <div class="verb-arrow"><span class="verb-original">${esc(s.original)}</span><span class="verb-arrow-icon">→</span><input type="text" class="verb-suggested-input" value="${esc(s.suggested)}" data-idx="${i}"></div>
-        <div class="verb-meta"><span class="verb-type-badge">${s.type === 'irregular' ? (currentLang === 'de' ? 'Unregelmäßig' : 'Irregular') : (currentLang === 'de' ? 'Regelmäßig' : 'Regular')}</span><span class="verb-confidence">${s.confidence}%</span></div>
+        <div class="verb-meta"><span class="verb-type-badge">${s.type === 'irregular' ? translations[currentLang].verbIrregular : translations[currentLang].verbRegular}</span><span class="verb-confidence">${s.confidence}%</span></div>
       </div>
     </div>`).join('');
   verbList.querySelectorAll('input[type="checkbox"]').forEach(cb => {
@@ -4283,12 +4915,12 @@ function showVerbNormalizeModal(suggestions, callback) {
 
 function renderExamples() {
   if (currentExamples.length === 0) {
-    examplesList.innerHTML = '<div class="examples-empty">Noch keine Beispiele.</div>';
+    examplesList.innerHTML = '<div class="examples-empty">' + translations[currentLang].exEmpty + '</div>';
     return;
   }
   examplesList.innerHTML = currentExamples.map((ex, i) => `
     <div class="example-row">
-      <input type="text" class="example-input" value="${esc(ex)}" data-idx="${i}" placeholder="Schreibe einen Satz…">
+      <input type="text" class="example-input" value="${esc(ex)}" data-idx="${i}" placeholder="${translations[currentLang].examplePlaceholder}">
       <button class="remove-example-btn" data-idx="${i}"></button>
     </div>`).join('');
   examplesList.querySelectorAll('.example-input').forEach(input => {
@@ -4364,13 +4996,13 @@ clearBtn.addEventListener('click', () => {
 
 function renderTagFilterBar() {
   if (tags.length === 0) {
-    tagFilterBar.innerHTML = '<span class="tag-filter-label">Noch keine Tags</span>';
+    tagFilterBar.innerHTML = '<span class="tag-filter-label">' + translations[currentLang].tagPickerEmpty + '</span>';
     return;
   }
   const allActive = activeFilterTags.size === 0;
-  let html = `<span class="tag-filter-label">Filter:</span>
+  let html = `<span class="tag-filter-label">${translations[currentLang].cardFilter}</span>
     <span class="tag-filter-chip ${allActive ? 'active' : ''}" data-filter="all" style="${allActive ? 'background:var(--kirsch-gold);color:var(--dark-choc);border-color:var(--kirsch-gold);' : ''}">
-      Alle <span class="count">${chunks.length}</span>
+      ${translations[currentLang].cardFilterAll} <span class="count">${chunks.length}</span>
     </span>`;
   tags.forEach(tag => {
     const count = getTagUsageCount(tag.id);
@@ -4380,7 +5012,7 @@ function renderTagFilterBar() {
       <span class="tag-dot" style="background:${tag.color};"></span>${esc(tag.name)}<span class="count">${count}</span>
     </span>`;
   });
-  html += `<button class="manage-tags-btn" id="manageTagsBtn">🏷️ Tags verwalten</button>`;
+  html += `<button class="manage-tags-btn" id="manageTagsBtn">${translations[currentLang].tagManageBtn}</button>`;
   tagFilterBar.innerHTML = html;
   tagFilterBar.querySelectorAll('.tag-filter-chip').forEach(chip => {
     chip.addEventListener('click', () => {
@@ -4406,7 +5038,7 @@ function renderCollection(filter = '') {
   else if (activeFolderFilter) filtered = filtered.filter(c => c.folder === activeFolderFilter);
 
   if (filtered.length === 0) {
-    collectionGrid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">🍰</div><h3>${q || activeFilterTags.size > 0 || activeFolderFilter ? 'Keine Treffer gefunden' : 'Deine Sammlung ist leer'}</h3><p>${q || activeFilterTags.size > 0 || activeFolderFilter ? 'Versuche eine andere Suche oder Filter.' : 'Füge deinen ersten Brocken hinzu!'}</p></div>`;
+    collectionGrid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">🍰</div><h3>${q || activeFilterTags.size > 0 || activeFolderFilter ? translations[currentLang].noMatches : translations[currentLang].emptyBox}</h3><p>${q || activeFilterTags.size > 0 || activeFolderFilter ? translations[currentLang].tryAnotherFilter : translations[currentLang].emptyStart}</p></div>`;
     return;
   }
 
@@ -4416,16 +5048,16 @@ function renderCollection(filter = '') {
     const dateStr = new Date(c.date).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
     const now = Date.now();
     const isDue = c.nextReview <= now;
-    const nextReviewStr = c.lastReview ? 'Nächste: ' + formatRelative(c.nextReview - now) : 'Noch nicht wiederholt';
+    const nextReviewStr = c.lastReview ? translations[currentLang].cardNext + ' ' + formatRelative(c.nextReview - now) : translations[currentLang].cardNotReviewed;
 
     const tagsHtml = (c.tags && c.tags.length > 0) ? `<div class="card-tags">${c.tags.map(tagId => {
       const tag = getTagById(tagId);
       if (!tag) return '';
       const textColor = getContrastColor(tag.color);
-      return `<span class="tag-pill" style="background:${tag.color};color:${textColor};"><span class="tag-dot" style="background:${textColor};opacity:0.5;"></span>${esc(tag.name)}<button class="remove-tag" data-chunk-id="${c.id}" data-tag-id="${tagId}" title="Tag entfernen">×</button></span>`;
+      return `<span class="tag-pill" style="background:${tag.color};color:${textColor};"><span class="tag-dot" style="background:${textColor};opacity:0.5;"></span>${esc(tag.name)}<button class="remove-tag" data-chunk-id="${c.id}" data-tag-id="${tagId}" title="${translations[currentLang].cardTagRemove}">×</button></span>`;
     }).join('')}</div>` : '';
 
-    const examplesHtml = (c.examples && c.examples.length > 0) ? `<div class="card-examples"><div class="card-examples-title">Beispiele</div>${c.examples.slice(0, 3).map(e => `<div class="card-example">${esc(e)}</div>`).join('')}${c.examples.length > 3 ? `<div class="card-example" style="color:var(--cream);opacity:0.6;font-size:0.8rem;">+${c.examples.length - 3} mehr</div>` : ''}</div>` : '';
+    const examplesHtml = (c.examples && c.examples.length > 0) ? `<div class="card-examples"><div class="card-examples-title">${translations[currentLang].cardExamples}</div>${c.examples.slice(0, 3).map(e => `<div class="card-example">${esc(e)}</div>`).join('')}${c.examples.length > 3 ? `<div class="card-example" style="color:var(--cream);opacity:0.6;font-size:0.8rem;">+${c.examples.length - 3} ${translations[currentLang].cardMoreSuffix}</div>` : ''}</div>` : '';
 
     const isSelected = selectedChunkIds.has(c.id);
     const folderName = c.folder ? (folders.find(f => f.id === c.folder)?.name || '?') : null;
@@ -4433,10 +5065,10 @@ function renderCollection(filter = '') {
 
     return `<div class="chunk-card ${selectionMode ? 'select-mode' : ''} ${isSelected ? 'selected' : ''}" data-id="${c.id}" onclick="handleCardClick(event, '${c.id}')">
       <input type="checkbox" class="select-checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleChunkSelection('${c.id}', this)">
-      <div class="card-header"><div class="card-frame">Rahmen: ${esc(c.frame)} ${folderBadge}</div><span class="srs-badge ${isDue && c.lastReview ? 'due' : c.status}">${c.status}</span></div>
+      <div class="card-header"><div class="card-frame">${translations[currentLang].cardFrame} ${esc(c.frame)} ${folderBadge}</div><span class="srs-badge ${isDue && c.lastReview ? 'due' : c.status}">${c.status}</span></div>
       <div class="card-chunk">${chunkHtml}</div>
       ${tagsHtml}${examplesHtml}
-      <div class="card-meta"><span class="card-date">Hinzugefügt ${dateStr}</span><span class="card-srs-info">${nextReviewStr}</span>
+      <div class="card-meta"><span class="card-date">${translations[currentLang].cardAddedPrefix} ${dateStr}</span><span class="card-srs-info">${nextReviewStr}</span>
         <div class="card-actions"><button class="card-btn" onclick="event.stopPropagation(); editChunk('${c.id}')">✏️</button><button class="card-btn del" onclick="event.stopPropagation(); deleteChunk('${c.id}')">🗑️</button></div>
       </div>
     </div>`;
@@ -4470,7 +5102,7 @@ function removeTagFromChunk(chunkId, tagId) {
   chunk.tags = chunk.tags.filter(id => id !== tagId);
   saveChunks(chunks);
   renderCollection(searchInput.value);
-  showToast('Tag entfernt');
+  showToast(translations[currentLang].tagRemoveToast);
 }
 
 function formatRelative(ms) {
@@ -4513,7 +5145,7 @@ function renderEditTagPicker() {
   if (!existingBtn) {
     const btn = document.createElement('button');
     btn.className = 'new-tag-btn';
-    btn.textContent = '+ Neuer Tag';
+    btn.textContent = translations[currentLang].tagNewBtn;
     btn.style.marginTop = '10px';
     btn.addEventListener('click', () => {
       if (editTagCreateForm.innerHTML) { editTagCreateForm.innerHTML = ''; return; }
@@ -4554,7 +5186,7 @@ function openManageTagsModal() {
 
 function renderManageTagsList() {
   if (tags.length === 0) {
-    manageTagsList.innerHTML = '<div class="manage-tags-empty">Noch keine Tags. Erstelle deinen ersten!</div>';
+    manageTagsList.innerHTML = '<div class="manage-tags-empty">' + translations[currentLang].tagPickerEmpty + '</div>';
     return;
   }
   manageTagsList.innerHTML = tags.map(tag => {
@@ -4562,10 +5194,10 @@ function renderManageTagsList() {
     return `<div class="manage-tag-row" data-tag-id="${tag.id}">
       <div class="manage-tag-color" style="background:${tag.color};"></div>
       <div class="manage-tag-name">${esc(tag.name)}</div>
-      <div class="manage-tag-count">${count} Brocken</div>
+      <div class="manage-tag-count">${count} ${translations[currentLang].manageTagsItemBrocken}</div>
       <div class="manage-tag-actions">
-        <button class="manage-tag-btn edit" data-tag-id="${tag.id}" title="Bearbeiten">✏️</button>
-        <button class="manage-tag-btn delete" data-tag-id="${tag.id}" title="Löschen">🗑️</button>
+        <button class="manage-tag-btn edit" data-tag-id="${tag.id}" title="${currentLang === 'de' ? 'Bearbeiten' : 'Edit'}">✏️</button>
+        <button class="manage-tag-btn delete" data-tag-id="${tag.id}" title="${translations[currentLang].folderDeleteBtn}">🗑️</button>
       </div>
     </div>`;
   }).join('');
@@ -4575,12 +5207,12 @@ function renderManageTagsList() {
       const tag = getTagById(btn.dataset.tagId);
       if (!tag) return;
       const count = getTagUsageCount(tag.id);
-      if (confirm(`Tag "${tag.name}" löschen?${count > 0 ? `\n\nEr wird aus ${count} Brocken entfernt.` : ''}`)) {
+      if (confirm(`${translations[currentLang].tagDeleteConfirmPrefix} "${tag.name}" ${translations[currentLang].tagDeleteConfirmSuffix}${count > 0 ? `\n\n${translations[currentLang].tagDeleteFromChunks} ${count} ${translations[currentLang].tagDeleteBrocken}` : ''}`)) {
         deleteTag(tag.id);
         renderManageTagsList();
         refreshAddTagPicker();
         renderCollection(searchInput.value);
-        showToast(`Tag "${tag.name}" gelöscht`);
+        showToast(`${translations[currentLang].tagUntranslated} "${tag.name}" ${translations[currentLang].tagDeletedToast}`);
       }
     });
   });
@@ -4605,7 +5237,7 @@ function startEditTag(tagId) {
     renderManageTagsList();
     refreshAddTagPicker();
     renderCollection(searchInput.value);
-    showToast(`Tag aktualisiert`);
+    showToast(translations[currentLang].tagUpdatedToast);
   });
   cancelBtn.addEventListener('click', () => { renderManageTagsList(); });
   nameInput.focus();
@@ -4631,30 +5263,30 @@ function renderPractice() {
   practiceCount.textContent = practiceQueue.length;
   practiceCountLabel.textContent = translations[currentLang].pracDue;
   if (practiceQueue.length === 0) {
-    practiceArea.innerHTML = `<div class="practice-done"><div class="practice-done-icon">🎉</div><h3>${currentLang === 'de' ? 'Alles aufgeholt!' : 'All caught up!'}</h3><p>${currentLang === 'de' ? 'Momentan sind keine Brocken zur Wiederholung fällig.' : 'No chunks due for review right now.'}</p><button class="btn btn-primary" onclick="document.querySelector('[data-tab=add]').click()">✍️ ${currentLang === 'de' ? 'Neuen Brocken hinzufügen' : 'Add New Chunk'}</button></div>`;
+    practiceArea.innerHTML = `<div class="practice-done"><div class="practice-done-icon">🎉</div><h3>${translations[currentLang].practiceAllCaughtUp}</h3><p>${translations[currentLang].practiceNoDue}</p><button class="btn btn-primary" onclick="document.querySelector('[data-tab=add]').click()">${translations[currentLang].practiceAddNew}</button></div>`;
     return;
   }
   const chunk = practiceQueue[practiceIndex];
   const frameHtml = chunk.parts.map(p => p.type === 'variable' ? `<span class="blank">___</span>` : esc(p.word)).join(' ');
-  const examplesHtml = (chunk.examples && chunk.examples.length > 0) ? `<div class="practice-examples"><div class="practice-examples-title">${currentLang === 'de' ? '💡 Tipps aus deinen Beispielen' : '💡 Hints from your examples'}</div>${chunk.examples.slice(0, 2).map(e => `<div class="practice-example">${esc(e)}</div>`).join('')}</div>` : '';
+  const examplesHtml = (chunk.examples && chunk.examples.length > 0) ? `<div class="practice-examples"><div class="practice-examples-title">${translations[currentLang].practiceHintsTitle}</div>${chunk.examples.slice(0, 2).map(e => `<div class="practice-example">${esc(e)}</div>`).join('')}</div>` : '';
   if (!practiceRevealed) {
-    practiceArea.innerHTML = `<div class="practice-card"><div class="practice-frame">${frameHtml}</div><div style="color:var(--cream);opacity:0.7;font-size:0.85rem;margin-bottom:16px;">${currentLang === 'de' ? 'Versuche, die fehlenden Teile abzurufen…' : 'Try to recall the missing parts…'}</div><button class="btn btn-primary" id="revealBtn">👁️ ${currentLang === 'de' ? 'Antwort zeigen' : 'Show Answer'}</button>${examplesHtml ? `<button class="btn btn-secondary" id="hintBtn" style="margin-top:10px;">💡 ${currentLang === 'de' ? 'Tipp zeigen' : 'Show Hint'}</button><div id="hintArea"></div>` : ''}</div>`;
+    practiceArea.innerHTML = `<div class="practice-card"><div class="practice-frame">${frameHtml}</div><div style="color:var(--cream);opacity:0.7;font-size:0.85rem;margin-bottom:16px;">${translations[currentLang].practiceTryRecall}</div><button class="btn btn-primary" id="revealBtn">${translations[currentLang].practiceShowAnswer}</button>${examplesHtml ? `<button class="btn btn-secondary" id="hintBtn" style="margin-top:10px;">${translations[currentLang].practiceShowHint}</button><div id="hintArea"></div>` : ''}</div>`;
     $('revealBtn').addEventListener('click', () => { practiceRevealed = true; renderPractice(); });
     const hintBtn = $('hintBtn');
     if (hintBtn) {
       hintBtn.addEventListener('click', () => {
         const area = $('hintArea');
-        if (area.innerHTML) { area.innerHTML = ''; hintBtn.textContent = '💡 ' + (currentLang === 'de' ? 'Tipp zeigen' : 'Show Hint'); }
-        else { area.innerHTML = examplesHtml; hintBtn.textContent = '🙈 ' + (currentLang === 'de' ? 'Tipp verstecken' : 'Hide Hint'); }
+        if (area.innerHTML) { area.innerHTML = ''; hintBtn.textContent = translations[currentLang].practiceShowHint; }
+        else { area.innerHTML = examplesHtml; hintBtn.textContent = translations[currentLang].practiceHideHint; }
       });
     }
   } else {
     const answerHtml = renderClickableChunk(chunk.parts, (word) => exploreWord(word));
     practiceArea.innerHTML = `<div class="practice-card"><div class="practice-frame">${frameHtml}</div><div class="practice-answer">${answerHtml}</div>${examplesHtml}</div><div class="practice-controls">
-      <button class="practice-btn again" data-rating="again">${currentLang === 'de' ? 'Nochmal' : 'Again'}<span class="interval-hint">${previewInterval(chunk, 'again')}</span></button>
-      <button class="practice-btn hard" data-rating="hard">${currentLang === 'de' ? 'Schwer' : 'Hard'}<span class="interval-hint">${previewInterval(chunk, 'hard')}</span></button>
-      <button class="practice-btn good" data-rating="good">${currentLang === 'de' ? 'Gut' : 'Good'}<span class="interval-hint">${previewInterval(chunk, 'good')}</span></button>
-      <button class="practice-btn easy" data-rating="easy">${currentLang === 'de' ? 'Leicht' : 'Easy'}<span class="interval-hint">${previewInterval(chunk, 'easy')}</span></button>
+      <button class="practice-btn again" data-rating="again">${translations[currentLang].practiceAgain}<span class="interval-hint">${previewInterval(chunk, 'again')}</span></button>
+      <button class="practice-btn hard" data-rating="hard">${translations[currentLang].practiceHard}<span class="interval-hint">${previewInterval(chunk, 'hard')}</span></button>
+      <button class="practice-btn good" data-rating="good">${translations[currentLang].practiceGood}<span class="interval-hint">${previewInterval(chunk, 'good')}</span></button>
+      <button class="practice-btn easy" data-rating="easy">${translations[currentLang].practiceEasy}<span class="interval-hint">${previewInterval(chunk, 'easy')}</span></button>
     </div>`;
     attachWordClickHandlers(practiceArea, (word) => exploreWord(word));
     practiceArea.querySelectorAll('.practice-btn').forEach(btn => {
@@ -4690,7 +5322,7 @@ function renderExplorer() {
   });
   const sortedWords = Object.entries(wordMap).sort((a, b) => b[1].count - a[1].count);
   if (sortedWords.length === 0) {
-    wordCloud.innerHTML = '<span class="tokens-empty">Keine Wörter gefunden. Füge zuerst einige Brocken hinzu!</span>';
+    wordCloud.innerHTML = '<span class="tokens-empty">' + translations[currentLang].explorerNoWords + '</span>';
     explorerResults.innerHTML = '';
     return;
   }
@@ -4705,8 +5337,8 @@ function renderExplorer() {
   if (selectedWord && wordMap[selectedWord]) {
     const data = wordMap[selectedWord];
     const formsArray = Array.from(data.forms).filter(f => f !== selectedWord);
-    const formsHint = formsArray.length > 0 ? `<span class="forms-hint">(auch: ${formsArray.join(', ')})</span>` : '';
-    explorerResults.innerHTML = `<div class="explorer-title"><span class="word-badge">${esc(selectedWord)}</span> kommt in ${data.count} Brocken vor:${formsHint}</div><div class="collection-grid">${data.chunks.map(c => {
+    const formsHint = formsArray.length > 0 ? `<span class="forms-hint">${translations[currentLang].explorerAlso} ${formsArray.join(', ')})</span>` : '';
+    explorerResults.innerHTML = `<div class="explorer-title"><span class="word-badge">${esc(selectedWord)}</span> ${translations[currentLang].explorerComesIn1} ${data.count} ${translations[currentLang].explorerComesIn2}${formsHint}</div><div class="collection-grid">${data.chunks.map(c => {
       const chunkHtml = renderClickableChunk(c.parts, (word) => { selectedWord = word; renderExplorer(); });
       const examplesHtml = (c.examples && c.examples.length > 0) ? c.examples.slice(0, 2).map(e => {
         const formsPattern = Array.from(data.forms).map(f => f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
@@ -4716,13 +5348,13 @@ function renderExplorer() {
       const isSelected = selectedChunkIds.has(c.id);
       return `<div class="chunk-card ${selectionMode ? 'select-mode' : ''} ${isSelected ? 'selected' : ''}" data-id="${c.id}" onclick="handleCardClick(event, '${c.id}')">
         <input type="checkbox" class="select-checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleChunkSelection('${c.id}', this)">
-        <div class="card-frame">Rahmen: ${esc(c.frame)}</div>
+        <div class="card-frame">${translations[currentLang].cardFrame} ${esc(c.frame)}</div>
         <div class="card-chunk">${chunkHtml}</div>${examplesHtml}
       </div>`;
     }).join('')}</div>`;
     attachWordClickHandlers(explorerResults, (word) => { selectedWord = word; renderExplorer(); });
   } else {
-    explorerResults.innerHTML = selectedWord ? '<div class="empty-state"><p>Keine Brocken enthalten dieses Wort.</p></div>' : '';
+    explorerResults.innerHTML = selectedWord ? '<div class="empty-state"><p>' + translations[currentLang].explorerNoChunksWithWord + '</p></div>' : '';
   }
 }
 
@@ -4759,7 +5391,7 @@ function attachWordClickHandlers(container, onWordClick) {
 
 analyzeBtn.addEventListener('click', () => {
   const text = importTextarea.value.trim();
-  if (!text) { showToast('⚠️ Bitte füge zuerst Text ein'); return; }
+  if (!text) { showToast(translations[currentLang].importNoText); return; }
   importTokenized = tokenizeText(text);
   autoCandidates = analyzeText(text, currentLengthFilter);
   autoSelected.clear();
@@ -4773,7 +5405,7 @@ analyzeBtn.addEventListener('click', () => {
   renderSelectionPreview();
   renderAutoCandidates();
   renderManualCandidatesList();
-  showToast(`🔍 Text analysiert — ${importTokenized.allWords.length} Wörter gefunden`);
+  showToast(`${translations[currentLang].importAnalyzedPrefix} ${importTokenized.allWords.length} ${translations[currentLang].importAnalyzedSuffix}`);
 });
 
 clearImportBtn.addEventListener('click', () => {
@@ -4801,7 +5433,7 @@ document.querySelectorAll('.import-mode-tab').forEach(tab => {
 document.getElementById('importManualBtn').addEventListener('click', importManualCandidates);
 document.getElementById('clearManualBtn').addEventListener('click', () => {
   if (manualCandidates.length === 0) return;
-  if (!confirm(`Alle ${manualCandidates.length} ausgewählten Brocken entfernen?`)) return;
+  if (!confirm(`${translations[currentLang].importConfirmRemoveAll} ${manualCandidates.length} ${translations[currentLang].importConfirmRemoveAllSuffix}`)) return;
   manualCandidates = [];
   renderManualCandidatesList();
 });
@@ -4881,6 +5513,23 @@ if (chunks.length === 0) {
   saveChunks(chunks);
   updateStats();
 }
+
+// Export/Import handlers
+$('importJsonBtn').addEventListener('click', openImportModal);
+$('exportJsonBtn').addEventListener('click', exportAllChunks);
+$('importFileInput').addEventListener('change', handleImportFileSelect);
+$('exportImportCancelBtn').addEventListener('click', () => {
+  document.getElementById('exportImportModal').classList.remove('show');
+  importPendingData = null;
+  exportPendingChunks = null;
+});
+$('exportImportModal').addEventListener('click', (e) => {
+  if (e.target === $('exportImportModal')) {
+    $('exportImportModal').classList.remove('show');
+    importPendingData = null;
+    exportPendingChunks = null;
+  }
+});
 
 // Init Lang
 setLang('de');
