@@ -1,0 +1,4879 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kirschholiker / Chunkoholic</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Nunito:wght@400;600;700;800&display=swap');
+
+  :root {
+    --dark-choc: #1F0E08;
+    --bitter: #2E1409;
+    --milk-choc: #4A1E0F;
+    --cherry: #8B1A1A;
+    --cherry-deep: #5C0A0A;
+    --cherry-bright: #C41E3A;
+    --kirsch: #A0522D;
+    --kirsch-gold: #D4A574;
+    --cream: #FFF8F0;
+    --white-choc: #FAEBD7;
+    --cocoa: #6B3A2A;
+    --cocoa-light: #A97B5A;
+    --snap-line: #0F0604;
+    --shadow-choc: rgba(31, 14, 8, 0.5);
+    --glow-cherry: rgba(139, 26, 26, 0.4);
+    --variable-bg: #D4A574;
+    --variable-text: #1F0E08;
+    --fixed-bg: #4A1E0F;
+    --fixed-text: #FFF8F0;
+    --danger: #8B1A1A;
+    --success: #5A7A3A;
+    --due-red: #C41E3A;
+    --learning-blue: #4A7BA6;
+    --mastered-green: #5A7A3A;
+    --bg-image: none;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    color: var(--cream);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: var(--bg-image);
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    z-index: -2;
+    background-color: #1a2332;
+  }
+
+  body.bg-failed::before {
+    background-image: none;
+    background: 
+      radial-gradient(ellipse at 30% 20%, rgba(139,164,184,0.3) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 60%, rgba(74,98,116,0.4) 0%, transparent 50%),
+      linear-gradient(180deg, #1a2332 0%, #2d3e50 25%, #4a6274 50%, #3d5266 75%, #1a2332 100%);
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      linear-gradient(180deg,
+        rgba(31, 14, 8, 0.92) 0%,
+        rgba(46, 20, 9, 0.88) 20%,
+        rgba(92, 10, 10, 0.75) 50%,
+        rgba(46, 20, 9, 0.88) 80%,
+        rgba(31, 14, 8, 0.95) 100%);
+    z-index: -1;
+  }
+
+  .bg-status {
+    position: fixed;
+    bottom: 8px;
+    right: 8px;
+    font-size: 0.65rem;
+    color: var(--cocoa-light);
+    opacity: 0.5;
+    z-index: 50;
+    pointer-events: none;
+  }
+
+  .lang-toggle-container {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0,0,0,0.4);
+    padding: 6px 12px;
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+    border: 1px solid var(--cocoa);
+  }
+
+  .lang-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: all 0.3s;
+  }
+
+  .lang-label.active {
+    opacity: 1;
+    color: var(--kirsch-gold);
+    text-shadow: 0 0 8px rgba(212,165,116,0.5);
+  }
+
+  .toggle-switch {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    background: var(--bitter);
+    border-radius: 11px;
+    cursor: pointer;
+    border: 1px solid var(--cocoa);
+  }
+
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: var(--kirsch-gold);
+    border-radius: 50%;
+    transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  }
+
+  .toggle-switch.en::after {
+    transform: translateX(18px);
+  }
+
+  .header {
+    position: relative;
+    background: linear-gradient(180deg, var(--bitter) 0%, var(--milk-choc) 100%);
+    padding: 28px 20px 48px;
+    text-align: center;
+    border-bottom: 4px solid var(--cherry);
+    z-index: 10;
+  }
+
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: -24px;
+    left: 0;
+    right: 0;
+    height: 24px;
+    background:
+      radial-gradient(circle at 10% 0, var(--milk-choc) 12px, transparent 12px),
+      radial-gradient(circle at 25% 0, var(--milk-choc) 16px, transparent 16px),
+      radial-gradient(circle at 42% 0, var(--milk-choc) 10px, transparent 10px),
+      radial-gradient(circle at 58% 0, var(--milk-choc) 18px, transparent 18px),
+      radial-gradient(circle at 73% 0, var(--milk-choc) 13px, transparent 13px),
+      radial-gradient(circle at 88% 0, var(--milk-choc) 15px, transparent 15px);
+    z-index: 10;
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.8rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--cherry-bright) 0%, var(--kirsch-gold) 40%, var(--cherry-bright) 60%, #E8B84B 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    letter-spacing: 1px;
+  }
+
+  .logo span {
+    font-size: 1.6rem;
+    vertical-align: middle;
+    -webkit-text-fill-color: initial;
+  }
+
+  .tagline {
+    font-size: 0.95rem;
+    color: var(--kirsch-gold);
+    margin-top: 4px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    font-style: italic;
+  }
+
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    padding: 14px 20px;
+    background: linear-gradient(180deg, var(--bitter), rgba(46,20,9,0.95));
+    border-bottom: 2px solid rgba(139,26,26,0.3);
+    position: relative;
+    z-index: 5;
+    flex-wrap: wrap;
+    backdrop-filter: blur(4px);
+  }
+
+  .stat { text-align: center; }
+
+  .stat-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--kirsch-gold);
+  }
+
+  .stat-num.due { color: var(--due-red); }
+
+  .stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--cocoa-light);
+    font-weight: 700;
+  }
+
+  .tabs {
+    display: flex;
+    background: linear-gradient(180deg, rgba(46,20,9,0.95), rgba(31,14,8,0.95));
+    border-bottom: 3px solid var(--snap-line);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    flex-wrap: wrap;
+    backdrop-filter: blur(6px);
+  }
+
+  .tab {
+    flex: 1;
+    min-width: 70px;
+    padding: 12px 6px;
+    text-align: center;
+    font-weight: 800;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    cursor: pointer;
+    color: var(--cocoa-light);
+    background: linear-gradient(180deg, var(--milk-choc) 0%, var(--bitter) 100%);
+    border-right: 2px solid var(--snap-line);
+    transition: all 0.3s ease;
+    position: relative;
+    user-select: none;
+  }
+
+  .tab:last-child { border-right: none; }
+
+  .tab:hover {
+    color: var(--cream);
+    background: linear-gradient(180deg, var(--cherry-deep) 0%, var(--milk-choc) 100%);
+  }
+
+  .tab.active {
+    color: var(--kirsch-gold);
+    background: linear-gradient(180deg, var(--dark-choc) 0%, var(--bitter) 100%);
+    box-shadow: inset 0 -3px 0 var(--cherry);
+  }
+
+  .tab.has-due::after {
+    content: attr(data-due);
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: var(--due-red);
+    color: var(--cream);
+    font-size: 0.6rem;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-weight: 800;
+    min-width: 18px;
+    text-align: center;
+  }
+
+  .tab-icon { font-size: 1rem; display: block; margin-bottom: 2px; }
+
+  .main {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 24px 16px 100px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; animation: fadeUp 0.35s ease; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    color: var(--kirsch-gold);
+    margin-bottom: 6px;
+  }
+
+  .section-desc {
+    font-size: 0.85rem;
+    color: var(--cream);
+    margin-bottom: 20px;
+    line-height: 1.5;
+    opacity: 0.85;
+  }
+
+  .input-wrapper {
+    background: linear-gradient(135deg, rgba(46,20,9,0.95), rgba(74,30,15,0.95));
+    border: 2px solid var(--cocoa);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(4px);
+  }
+
+  .input-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--cherry), var(--kirsch-gold), var(--cherry));
+  }
+
+  .chunk-input, .modal-input, .example-input, .import-textarea, .tag-name-input, .folder-name-input {
+    width: 100%;
+    background: rgba(0,0,0,0.35);
+    border: 2px solid var(--cocoa);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--cream);
+    outline: none;
+    transition: border-color 0.3s;
+    resize: none;
+  }
+
+  .chunk-input { min-height: 52px; }
+  .import-textarea { min-height: 180px; font-size: 0.95rem; font-weight: 600; line-height: 1.6; }
+  .tag-name-input, .folder-name-input { padding: 8px 12px; font-size: 0.9rem; }
+
+  .chunk-input::placeholder, .example-input::placeholder, .modal-input::placeholder, .import-textarea::placeholder, .tag-name-input::placeholder {
+    color: var(--cocoa-light);
+    font-weight: 600;
+  }
+
+  .chunk-input:focus, .example-input:focus, .modal-input:focus, .import-textarea:focus, .tag-name-input:focus {
+    border-color: var(--cherry);
+    box-shadow: 0 0 0 3px var(--glow-cherry);
+  }
+
+  .hint {
+    font-size: 0.75rem;
+    color: var(--cream);
+    opacity: 0.75;
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+
+  .hint code {
+    background: rgba(212,165,116,0.25);
+    color: var(--kirsch-gold);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+  }
+
+  .tokens-area {
+    background: linear-gradient(135deg, rgba(31,14,8,0.9), rgba(46,20,9,0.95));
+    border: 2px solid var(--cocoa);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    min-height: 80px;
+    backdrop-filter: blur(4px);
+  }
+
+  .tokens-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--kirsch-gold);
+    font-weight: 800;
+    margin-bottom: 12px;
+  }
+
+  .tokens-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 40px;
+    align-items: center;
+  }
+
+  .token {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    border: 2px solid transparent;
+    position: relative;
+  }
+
+  .token.fixed {
+    background: var(--fixed-bg);
+    color: var(--fixed-text);
+    border-color: var(--cocoa);
+  }
+
+  .token.fixed:hover {
+    background: var(--cocoa);
+    border-color: var(--cherry);
+  }
+
+  .token.variable {
+    background: linear-gradient(135deg, var(--variable-bg), var(--kirsch-gold));
+    color: var(--variable-text);
+    border-color: var(--kirsch-gold);
+    box-shadow: 0 2px 8px rgba(212,165,116,0.3);
+  }
+
+  .token.variable:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(212,165,116,0.5);
+  }
+
+  .token.variable::after {
+    content: '✎';
+    font-size: 0.65rem;
+    margin-left: 5px;
+    opacity: 0.6;
+  }
+
+  .tokens-empty {
+    color: var(--cocoa-light);
+    font-style: italic;
+    font-size: 0.9rem;
+  }
+
+  .frame-preview {
+    background: linear-gradient(135deg, rgba(31,14,8,0.9), rgba(46,20,9,0.95));
+    border: 2px dashed var(--cherry);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .frame-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--cherry-bright);
+    font-weight: 800;
+    margin-bottom: 10px;
+  }
+
+  .frame-text {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--cream);
+    line-height: 1.8;
+  }
+
+  .frame-text .blank {
+    display: inline-block;
+    min-width: 60px;
+    border-bottom: 3px solid var(--cherry-bright);
+    color: var(--kirsch-gold);
+    margin: 0 4px;
+    padding: 0 8px;
+    font-style: italic;
+  }
+
+  .examples-section, .tags-section {
+    background: linear-gradient(135deg, rgba(46,20,9,0.95), rgba(74,30,15,0.95));
+    border: 2px solid var(--cocoa);
+    border-radius: 16px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+    position: relative;
+    backdrop-filter: blur(4px);
+  }
+
+  .examples-section::before, .tags-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--cherry), var(--kirsch-gold), var(--cherry));
+  }
+
+  .examples-header, .tags-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .examples-title, .tags-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--cherry-bright);
+    font-weight: 800;
+  }
+
+  .add-example-btn, .new-tag-btn, .new-folder-btn {
+    background: rgba(139,26,26,0.2);
+    border: 1px solid var(--cherry);
+    color: var(--cherry-bright);
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    transition: all 0.2s;
+  }
+
+  .add-example-btn:hover, .new-tag-btn:hover, .new-folder-btn:hover {
+    background: rgba(139,26,26,0.4);
+  }
+
+  .examples-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .example-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .example-input {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+  }
+
+  .remove-example-btn {
+    background: var(--cherry-deep);
+    border: none;
+    color: var(--cream);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  .remove-example-btn:hover { background: var(--cherry); }
+
+  .examples-empty, .tags-empty {
+    color: var(--cream);
+    opacity: 0.6;
+    font-size: 0.85rem;
+    font-style: italic;
+    padding: 6px 0;
+  }
+
+  .tag-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    user-select: none;
+    font-family: 'Nunito', sans-serif;
+  }
+
+  .tag-chip.available {
+    background: rgba(0,0,0,0.35);
+    color: var(--cream);
+    border-color: var(--cocoa);
+    opacity: 0.75;
+  }
+
+  .tag-chip.available:hover {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+
+  .tag-chip.selected {
+    opacity: 1;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    transform: scale(1.02);
+  }
+
+  .tag-chip.selected::after {
+    content: '✓';
+    font-size: 0.7rem;
+    font-weight: 900;
+  }
+
+  .tag-chip .tag-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .tag-create-form, .folder-create-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 10px;
+    background: rgba(0,0,0,0.3);
+    border: 2px dashed var(--cherry);
+    border-radius: 12px;
+    margin-top: 10px;
+    animation: fadeUp 0.25s ease;
+  }
+
+  .tag-create-form .tag-name-input, .folder-create-form .folder-name-input {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .color-picker-wrapper {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid var(--cocoa);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+  }
+
+  .color-picker-wrapper:hover {
+    transform: scale(1.1);
+    border-color: var(--cherry);
+  }
+
+  .color-picker-wrapper input[type="color"] {
+    position: absolute;
+    inset: -4px;
+    width: calc(100% + 8px);
+    height: calc(100% + 8px);
+    border: none;
+    cursor: pointer;
+    background: transparent;
+  }
+
+  .color-picker-wrapper input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+  .color-picker-wrapper input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; }
+  .color-picker-wrapper input[type="color"]::-moz-color-swatch { border: none; }
+
+  .tag-form-btn, .folder-form-btn {
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    cursor: pointer;
+    border: none;
+    font-family: 'Nunito', sans-serif;
+    transition: all 0.2s;
+  }
+
+  .tag-form-btn.confirm, .folder-form-btn.confirm {
+    background: linear-gradient(135deg, var(--cherry), var(--cherry-bright));
+    color: var(--cream);
+  }
+
+  .tag-form-btn.confirm:hover:not(:disabled), .folder-form-btn.confirm:hover:not(:disabled) { transform: translateY(-1px); }
+  .tag-form-btn.confirm:disabled, .folder-form-btn.confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .tag-form-btn.cancel, .folder-form-btn.cancel {
+    background: transparent;
+    color: var(--cream);
+    opacity: 0.7;
+    border: 1px solid var(--cocoa);
+  }
+
+  .tag-form-btn.cancel:hover, .folder-form-btn.cancel:hover {
+    background: var(--cocoa);
+    opacity: 1;
+  }
+
+  .card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+    margin-bottom: 4px;
+  }
+
+  .tag-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px 3px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    cursor: default;
+    transition: all 0.2s;
+    font-family: 'Nunito', sans-serif;
+  }
+
+  .tag-pill .tag-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  .tag-pill .remove-tag {
+    background: rgba(0,0,0,0.3);
+    border: none;
+    color: inherit;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.65rem;
+    font-weight: 900;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    padding: 0;
+    line-height: 1;
+  }
+
+  .tag-pill .remove-tag:hover {
+    background: rgba(0,0,0,0.6);
+    transform: scale(1.15);
+  }
+
+  .tag-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, rgba(46,20,9,0.85), rgba(74,30,15,0.85));
+    border: 2px solid var(--cocoa);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    align-items: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .tag-filter-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--kirsch-gold);
+    font-weight: 800;
+    margin-right: 4px;
+  }
+
+  .tag-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid var(--cocoa);
+    background: rgba(0,0,0,0.35);
+    color: var(--cream);
+    font-family: 'Nunito', sans-serif;
+    opacity: 0.7;
+  }
+
+  .tag-filter-chip:hover {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+
+  .tag-filter-chip.active {
+    opacity: 1;
+    box-shadow: 0 0 0 2px var(--cherry-bright);
+    transform: scale(1.05);
+  }
+
+  .tag-filter-chip .tag-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+  }
+
+  .tag-filter-chip .count {
+    background: rgba(0,0,0,0.3);
+    padding: 1px 5px;
+    border-radius: 8px;
+    font-size: 0.65rem;
+    margin-left: 2px;
+  }
+
+  .manage-tags-btn {
+    background: transparent;
+    border: 1px dashed var(--cocoa);
+    color: var(--cream);
+    opacity: 0.7;
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Nunito', sans-serif;
+    margin-left: auto;
+  }
+
+  .manage-tags-btn:hover {
+    border-color: var(--cherry);
+    color: var(--cherry-bright);
+    opacity: 1;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 28px;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--cherry), var(--cherry-bright));
+    color: var(--cream);
+    box-shadow: 0 4px 16px rgba(139,26,26,0.5);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(196,30,58,0.6);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .btn-secondary {
+    background: var(--milk-choc);
+    color: var(--cream);
+    border: 2px solid var(--cocoa);
+  }
+
+  .btn-secondary:hover {
+    background: var(--cocoa);
+    border-color: var(--cherry);
+  }
+
+  .btn-tool {
+    background: linear-gradient(135deg, var(--kirsch), var(--kirsch-gold));
+    color: var(--cream);
+    box-shadow: 0 4px 16px rgba(160,82,45,0.4);
+  }
+
+  .btn-tool:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(212,165,116,0.5);
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .search-bar {
+    position: relative;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 10px;
+  }
+
+  .search-input-wrapper {
+    position: relative;
+    flex: 1;
+  }
+
+  .search-input {
+    width: 100%;
+    background: rgba(0,0,0,0.35);
+    border: 2px solid var(--cocoa);
+    border-radius: 12px;
+    padding: 12px 16px 12px 44px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--cream);
+    outline: none;
+    backdrop-filter: blur(4px);
+  }
+
+  .search-input:focus {
+    border-color: var(--cherry);
+    box-shadow: 0 0 0 3px var(--glow-cherry);
+  }
+
+  .search-input::placeholder { color: var(--cream); opacity: 0.5; }
+
+  .search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.1rem;
+    opacity: 0.5;
+  }
+
+  .collection-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .chunk-card {
+    background: linear-gradient(145deg, rgba(74,30,15,0.95), rgba(46,20,9,0.95));
+    border: 2px solid var(--cocoa);
+    border-radius: 16px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(6px);
+  }
+
+  .chunk-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--cherry), var(--kirsch-gold), var(--cherry));
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .chunk-card:hover {
+    border-color: var(--cherry);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px var(--shadow-choc);
+  }
+
+  .chunk-card:hover::before { opacity: 1; }
+
+  .chunk-card.select-mode {
+    cursor: pointer;
+    border-color: var(--cocoa-light);
+  }
+  
+  .chunk-card.select-mode.selected {
+    border-color: var(--kirsch-gold);
+    background: linear-gradient(145deg, rgba(92,10,10,0.95), rgba(74,30,15,0.95));
+    box-shadow: 0 0 0 2px var(--kirsch-gold);
+  }
+
+  .select-checkbox {
+    display: none;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 20px;
+    height: 20px;
+    accent-color: var(--kirsch-gold);
+    z-index: 5;
+  }
+
+  .select-mode .select-checkbox {
+    display: block;
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .card-frame {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--cherry-bright);
+    font-weight: 800;
+    flex: 1;
+  }
+
+  .srs-badge {
+    font-size: 0.65rem;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .srs-badge.new { background: var(--cocoa); color: var(--cream); }
+  .srs-badge.learning { background: var(--learning-blue); color: var(--cream); }
+  .srs-badge.review { background: var(--kirsch-gold); color: var(--dark-choc); }
+  .srs-badge.mastered { background: var(--mastered-green); color: var(--cream); }
+  .srs-badge.due { background: var(--due-red); color: var(--cream); animation: pulse 2s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  .card-chunk {
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1.6;
+    color: var(--cream);
+    margin-bottom: 10px;
+  }
+
+  .card-chunk .var-part {
+    background: linear-gradient(135deg, var(--variable-bg), var(--kirsch-gold));
+    color: var(--variable-text);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 800;
+  }
+
+  .clickable-word {
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    padding: 0 2px;
+    margin: 0 -2px;
+  }
+
+  .clickable-word:hover {
+    background: rgba(196,30,58,0.25);
+    color: var(--cherry-bright);
+  }
+
+  .clickable-word::after {
+    content: '🔍';
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    font-size: 0.6rem;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+
+  .clickable-word:hover::after { opacity: 1; }
+
+  .card-examples {
+    border-top: 1px dashed var(--cocoa);
+    padding-top: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+
+  .card-examples-title {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--cherry-bright);
+    font-weight: 800;
+    margin-bottom: 6px;
+  }
+
+  .card-example {
+    font-size: 0.88rem;
+    color: var(--cream);
+    line-height: 1.5;
+    padding: 4px 0 4px 14px;
+    position: relative;
+    font-style: italic;
+  }
+
+  .card-example::before {
+    content: '❝';
+    position: absolute;
+    left: 0;
+    top: 2px;
+    color: var(--cherry);
+    font-style: normal;
+  }
+
+  .card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .card-date, .card-srs-info {
+    font-size: 0.7rem;
+    color: var(--cream);
+    opacity: 0.7;
+    font-weight: 600;
+  }
+
+  .card-actions { display: flex; gap: 6px; }
+
+  .card-btn {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--cocoa);
+    color: var(--cream);
+    opacity: 0.8;
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+  }
+
+  .card-btn:hover {
+    background: var(--cherry-deep);
+    color: var(--cream);
+    border-color: var(--cherry);
+    opacity: 1;
+  }
+
+  .card-btn.del:hover {
+    background: var(--cherry);
+    border-color: var(--cherry);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--cream);
+    opacity: 0.7;
+  }
+
+  .empty-state .empty-icon {
+    font-size: 3.5rem;
+    margin-bottom: 12px;
+  }
+
+  .empty-state h3 {
+    font-family: 'Playfair Display', serif;
+    color: var(--kirsch-gold);
+    margin-bottom: 6px;
+    opacity: 1;
+  }
+
+  /* ===== FOLDER BAR - HORIZONTAL ===== */
+.folder-bar {
+  background: linear-gradient(135deg, rgba(46,20,9,0.9), rgba(74,30,15,0.9));
+  border: 2px solid var(--cocoa);
+  border-radius: 16px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  backdrop-filter: blur(4px);
+}
+
+.folder-bar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.folder-bar-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--kirsch-gold);
+  font-weight: 800;
+}
+
+.folder-list-horizontal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.folder-item-h {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid var(--cocoa);
+  background: rgba(0,0,0,0.3);
+  color: var(--cream);
+  opacity: 0.7;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: 'Nunito', sans-serif;
+  user-select: none;
+}
+
+.folder-item-h:hover {
+  opacity: 1;
+  transform: scale(1.03);
+}
+
+.folder-item-h.active {
+  background: rgba(139,26,26,0.3);
+  border-color: var(--cherry);
+  opacity: 1;
+  box-shadow: 0 0 0 1px var(--cherry);
+}
+
+.folder-item-h .folder-icon {
+  font-size: 0.8rem;
+}
+
+.folder-item-h .folder-count {
+  font-size: 0.65rem;
+  font-weight: 800;
+  background: rgba(0,0,0,0.3);
+  padding: 0 6px;
+  border-radius: 8px;
+  color: var(--kirsch-gold);
+}
+
+.folder-item-h .folder-actions {
+  display: none;
+  gap: 2px;
+  margin-left: 2px;
+}
+
+.folder-item-h:hover .folder-actions {
+  display: inline-flex;
+}
+
+.folder-item-h .folder-actions button {
+  background: transparent;
+  border: none;
+  color: var(--cream);
+  opacity: 0.5;
+  cursor: pointer;
+  font-size: 0.6rem;
+  padding: 1px 3px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.folder-item-h .folder-actions button:hover {
+  opacity: 1;
+  background: rgba(139,26,26,0.3);
+}
+
+.folder-item-h .folder-actions button.delete:hover {
+  color: var(--cherry-bright);
+}
+
+.folder-create-form {
+  margin-top: 10px;
+  padding: 10px;
+  background: rgba(0,0,0,0.3);
+  border: 2px dashed var(--cherry);
+  border-radius: 12px;
+  animation: fadeUp 0.25s ease;
+}
+
+.folder-create-form .folder-name-input {
+  width: 200px;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  background: rgba(0,0,0,0.35);
+  border: 2px solid var(--cocoa);
+  border-radius: 8px;
+  color: var(--cream);
+  outline: none;
+  font-family: 'Nunito', sans-serif;
+}
+
+.folder-create-form .folder-name-input:focus {
+  border-color: var(--cherry);
+}
+
+.folder-create-form .folder-form-btns {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: 8px;
+}
+
+.folder-create-form .folder-form-btn {
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Nunito', sans-serif;
+}
+
+.folder-create-form .folder-form-btn.confirm {
+  background: linear-gradient(135deg, var(--cherry), var(--cherry-bright));
+  color: var(--cream);
+}
+
+.folder-create-form .folder-form-btn.confirm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.folder-create-form .folder-form-btn.cancel {
+  background: transparent;
+  color: var(--cream);
+  opacity: 0.7;
+  border: 1px solid var(--cocoa);
+}
+
+.folder-empty {
+  color: var(--cream);
+  opacity: 0.5;
+  font-size: 0.8rem;
+  font-style: italic;
+  padding: 4px 0;
+}
+
+/* Удали старые стили .collection-layout, .folders-sidebar, .collection-main */
+
+  /* ===== rest of styles ===== */
+  .explorer-toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .explorer-search {
+    flex: 1;
+    min-width: 200px;
+    background: rgba(0,0,0,0.35);
+    border: 2px solid var(--cocoa);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--cream);
+    outline: none;
+    backdrop-filter: blur(4px);
+  }
+
+  .explorer-search:focus {
+    border-color: var(--cherry);
+    box-shadow: 0 0 0 3px var(--glow-cherry);
+  }
+
+  .explorer-search::placeholder { color: var(--cream); opacity: 0.5; }
+
+  .clear-selection-btn {
+    background: var(--milk-choc);
+    border: 2px solid var(--cocoa);
+    color: var(--cream);
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Nunito', sans-serif;
+    white-space: nowrap;
+  }
+
+  .clear-selection-btn:hover {
+    background: var(--cherry-deep);
+    border-color: var(--cherry);
+  }
+
+  .word-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: linear-gradient(135deg, rgba(46,20,9,0.85), rgba(74,30,15,0.85));
+    border: 2px solid var(--cocoa);
+    border-radius: 16px;
+    max-height: 400px;
+    overflow-y: auto;
+    backdrop-filter: blur(4px);
+  }
+
+  .word-chip {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid var(--cocoa);
+    background: rgba(0,0,0,0.35);
+    color: var(--cream);
+    position: relative;
+  }
+
+  .word-chip:hover {
+    background: linear-gradient(135deg, var(--cherry), var(--cherry-bright));
+    color: var(--cream);
+    border-color: var(--cherry-bright);
+    transform: scale(1.05);
+  }
+
+  .word-chip.active {
+    background: linear-gradient(135deg, var(--kirsch-gold), #E8B84B);
+    color: var(--dark-choc);
+    border-color: var(--kirsch-gold);
+    box-shadow: 0 0 12px rgba(212,165,116,0.5);
+    transform: scale(1.08);
+  }
+
+  .word-chip .word-count {
+    display: inline-block;
+    background: rgba(0,0,0,0.25);
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    margin-left: 4px;
+  }
+
+  .word-chip.active .word-count { background: rgba(31,14,8,0.2); }
+
+  .word-chip .word-forms {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    opacity: 0.7;
+    margin-top: 2px;
+    font-style: italic;
+  }
+
+  .explorer-results { margin-top: 16px; }
+
+  .explorer-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    color: var(--kirsch-gold);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .explorer-title .word-badge {
+    background: linear-gradient(135deg, var(--kirsch-gold), #E8B84B);
+    color: var(--dark-choc);
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    font-weight: 800;
+  }
+
+  .explorer-title .forms-hint {
+    font-size: 0.8rem;
+    color: var(--cream);
+    opacity: 0.7;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-style: italic;
+  }
+
+  .explorer-example {
+    background: rgba(0,0,0,0.3);
+    border-left: 3px solid var(--cherry);
+    padding: 8px 12px;
+    margin: 6px 0;
+    font-style: italic;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    border-radius: 0 8px 8px 0;
+  }
+
+  .explorer-example .highlight {
+    background: var(--kirsch-gold);
+    color: var(--dark-choc);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-weight: 800;
+    font-style: normal;
+  }
+
+  .import-input-section {
+    background: linear-gradient(135deg, rgba(46,20,9,0.95), rgba(74,30,15,0.95));
+    border: 2px solid var(--cocoa);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(4px);
+  }
+
+  .import-input-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--cherry), var(--kirsch-gold), var(--cherry));
+  }
+
+  .import-length-filter {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  .import-length-filter label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--kirsch-gold);
+    font-weight: 800;
+  }
+
+  .length-chip {
+    padding: 5px 12px;
+    border-radius: 16px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: rgba(0,0,0,0.35);
+    border: 2px solid var(--cocoa);
+    color: var(--cream);
+    transition: all 0.2s;
+    font-family: 'Nunito', sans-serif;
+  }
+
+  .length-chip:hover { border-color: var(--cherry); }
+
+  .length-chip.active {
+    background: linear-gradient(135deg, var(--cherry), var(--cherry-bright));
+    color: var(--cream);
+    border-color: var(--cherry-bright);
+  }
+
+  .import-mode-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 16px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid var(--cocoa);
+  }
+
+  .import-mode-tab {
+    flex: 1;
+    padding: 12px 16px;
+    background: rgba(0,0,0,0.35);
+    color: var(--cream);
+    opacity: 0.7;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    border: none;
+  }
+
+  .import-mode-tab:hover {
+    opacity: 0.9;
+    background: rgba(139,26,26,0.2);
+  }
+
+  .import-mode-tab.active {
+    background: linear-gradient(135deg, var(--cherry), var(--cherry-bright));
+    color: var(--cream);
+    opacity: 1;
+  }
+
+  .import-mode-panel { display: none; }
+  .import-mode-panel.active { display: block; animation: fadeUp 0.3s ease; }
+
+  .interactive-text {
+    background: linear-gradient(135deg, rgba(31,14,8,0.95), rgba(46,20,9,0.95));
+    border: 2px solid var(--cocoa);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    line-height: 2.2;
+    font-size: 1.05rem;
+    font-weight: 600;
+    backdrop-filter: blur(4px);
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .interactive-text .sentence {
+    display: inline;
+    margin-right: 4px;
+  }
+
+  .interactive-text .iword {
+    display: inline-block;
+    padding: 2px 4px;
+    margin: 2px 1px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    border: 2px solid transparent;
+  }
+
+  .interactive-text .iword:hover {
+    background: rgba(212,165,116,0.15);
+    border-color: var(--kirsch-gold);
+  }
+
+  .interactive-text .iword.selected {
+    background: linear-gradient(135deg, var(--kirsch-gold), #E8B84B);
+    color: var(--dark-choc);
+    border-color: var(--kirsch-gold);
+    box-shadow: 0 2px 8px rgba(212,165,116,0.4);
+    font-weight: 800;
+  }
+
+  .interactive-text .ipunct {
+    display: inline;
+    color: var(--cream);
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  .selection-preview {
+    background: linear-gradient(135deg, rgba(92,10,10,0.6), rgba(74,30,15,0.8));
+    border: 2px dashed var(--kirsch-gold);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: fadeUp 0.25s ease;
+  }
+
+  .selection-preview-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--kirsch-gold);
+    font-weight: 800;
+  }
+
+  .selection-preview-text {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--cream);
+    line-height: 1.6;
+  }
+
+  .selection-preview-text .sel-word {
+    background: linear-gradient(135deg, var(--kirsch-gold), #E8B84B);
+    color: var(--dark-choc);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 800;
+  }
+
+  .selection-info {
+    font-size: 0.8rem;
+    color: var(--kirsch-gold);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .selection-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .manual-candidates-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .manual-candidate-card {
+    background: linear-gradient(145deg, rgba(74,30,15,0.95), rgba(46,20,9,0.95));
+    border: 2px solid var(--cocoa);
+    border-radius: 14px;
+    padding: 14px 16px;
+    position: relative;
+    backdrop-filter: blur(4px);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .manual-candidate-card .mc-chunk {
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.6;
+    color: var(--cream);
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .manual-candidate-card .mc-chunk .token {
+    font-size: 0.95rem;
+    padding: 4px 10px;
+    cursor: grab;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    z-index: 1;
+  }
+
+  .manual-candidate-card .mc-chunk .token:active {
+    cursor: grabbing;
+    z-index: 100;
+  }
+
+  .manual-candidate-card .mc-chunk .token.dragging {
+    opacity: 0.4;
+    background: var(--cocoa);
+    border-color: var(--kirsch-gold);
+  }
+
+  .manual-candidate-card .mc-chunk .token.drag-over {
+    transform: scale(1.1);
+    box-shadow: 0 0 10px var(--kirsch-gold);
+    border-color: var(--kirsch-gold);
+    z-index: 10;
+  }
+
+  .manual-candidate-card .mc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .manual-candidate-card .mc-remove {
+    background: var(--cherry-deep);
+    border: none;
+    color: var(--cream);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 800;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+
+  .manual-candidate-card .mc-remove:hover {
+    background: var(--cherry);
+    transform: scale(1.1);
+  }
+
+  .manual-candidate-card .mc-source {
+    font-size: 0.8rem;
+    color: var(--cream);
+    opacity: 0.65;
+    font-style: italic;
+    padding-left: 12px;
+    border-left: 2px solid var(--cherry);
+    margin-top: 6px;
+  }
+
+  .manual-candidate-card .mc-meta {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  .candidate-badge {
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(0,0,0,0.4);
+    color: var(--cream);
+    opacity: 0.8;
+    border: 1px solid var(--cocoa);
+  }
+
+  .candidate-badge.dup {
+    background: rgba(139,26,26,0.3);
+    color: var(--cherry-bright);
+    border-color: var(--cherry);
+    opacity: 1;
+  }
+
+  .candidate-badge.length {
+    background: rgba(212,165,116,0.2);
+    color: var(--kirsch-gold);
+    border-color: var(--kirsch-gold);
+    opacity: 1;
+  }
+
+  .candidate-badge.modified {
+    background: rgba(212,165,116,0.3);
+    color: var(--kirsch-gold);
+    border-color: var(--kirsch-gold);
+    opacity: 1;
+  }
+
+  .import-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, rgba(46,20,9,0.95), rgba(74,30,15,0.95));
+    border: 2px solid var(--cocoa);
+    border-radius: 12px;
+    backdrop-filter: blur(4px);
+  }
+
+  .import-toolbar-left {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .import-toolbar-btn {
+    background: transparent;
+    border: 1px solid var(--cocoa);
+    color: var(--cream);
+    opacity: 0.8;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Nunito', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .import-toolbar-btn:hover {
+    background: var(--cherry-deep);
+    color: var(--cream);
+    border-color: var(--cherry);
+    opacity: 1;
+  }
+
+  .import-counter {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--kirsch-gold);
+  }
+
+  .import-counter strong { font-size: 1.1rem; }
+
+  /* AUTO CANDIDATE CARD */
+  .candidate-card {
+    background: linear-gradient(145deg, rgba(74,30,15,0.95), rgba(46,20,9,0.95));
+    border: 2px solid var(--cocoa);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    transition: all 0.25s ease;
+    position: relative;
+    backdrop-filter: blur(4px);
+  }
+
+  .candidate-card:hover { border-color: var(--cherry); }
+
+  .candidate-card.selected {
+    border-color: var(--kirsch-gold);
+    background: linear-gradient(145deg, rgba(92,10,10,0.95), rgba(74,30,15,0.95));
+    box-shadow: 0 4px 16px rgba(212,165,116,0.2);
+  }
+
+  .candidate-card.modified {
+    border-color: var(--kirsch-gold);
+    box-shadow: 0 0 0 2px var(--kirsch-gold), 0 4px 16px rgba(212,165,116,0.3);
+  }
+
+  .candidate-card.duplicate { opacity: 0.5; }
+
+  .candidate-checkbox {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    margin-top: 2px;
+    cursor: pointer;
+    accent-color: var(--cherry-bright);
+  }
+
+  .candidate-content { flex: 1; min-width: 0; }
+
+  .candidate-chunk {
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.6;
+    color: var(--cream);
+    margin-bottom: 6px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .candidate-chunk .token {
+    font-size: 0.95rem;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .candidate-chunk .token:hover {
+    transform: scale(1.05);
+  }
+
+  .candidate-chunk .token .token-remove {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 18px;
+    height: 18px;
+    background: var(--cherry-bright);
+    color: var(--cream);
+    border: 2px solid var(--dark-choc);
+    border-radius: 50%;
+    font-size: 0.7rem;
+    font-weight: 900;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    line-height: 1;
+    padding: 0;
+  }
+
+  .candidate-chunk .token:hover .token-remove {
+    display: flex;
+  }
+
+  .candidate-chunk .token .token-remove:hover {
+    background: var(--danger);
+    transform: scale(1.2);
+  }
+
+  .candidate-chunk .token.variable {
+    background: linear-gradient(135deg, var(--variable-bg), var(--kirsch-gold));
+    color: var(--variable-text);
+    border-color: var(--kirsch-gold);
+  }
+
+  .candidate-chunk .token.fixed {
+    background: var(--fixed-bg);
+    color: var(--fixed-text);
+    border-color: var(--cocoa);
+  }
+
+  .candidate-source {
+    font-size: 0.8rem;
+    color: var(--cream);
+    opacity: 0.7;
+    font-style: italic;
+    line-height: 1.4;
+    padding-left: 12px;
+    border-left: 2px solid var(--cherry);
+    margin-top: 6px;
+  }
+
+  .candidate-source::before {
+    content: '📖 ';
+    font-style: normal;
+  }
+
+  .candidate-meta {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .candidate-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  .candidate-action-btn {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--cocoa);
+    color: var(--cream);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Nunito', sans-serif;
+  }
+
+  .candidate-action-btn:hover {
+    background: var(--cocoa);
+    border-color: var(--cherry);
+  }
+
+  .candidate-action-btn.add-modified {
+    background: linear-gradient(135deg, var(--kirsch), var(--kirsch-gold));
+    color: var(--cream);
+    border-color: var(--kirsch-gold);
+  }
+
+  .candidate-action-btn.add-modified:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(212,165,116,0.4);
+  }
+
+  .import-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--cream);
+    opacity: 0.7;
+  }
+
+  .import-empty-icon {
+    font-size: 3rem;
+    margin-bottom: 10px;
+  }
+
+  .practice-header {
+    background: linear-gradient(135deg, rgba(46,20,9,0.95), rgba(74,30,15,0.95));
+    border: 2px solid var(--cocoa);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .practice-count {
+    font-family: 'Playfair Display', serif;
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--kirsch-gold);
+    line-height: 1;
+  }
+
+  .practice-count-label {
+    font-size: 0.85rem;
+    color: var(--cream);
+    opacity: 0.7;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+
+  .practice-card {
+    background: linear-gradient(145deg, rgba(74,30,15,0.95), rgba(46,20,9,0.95));
+    border: 3px solid var(--cherry);
+    border-radius: 20px;
+    padding: 32px 24px;
+    text-align: center;
+    margin-bottom: 20px;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(6px);
+  }
+
+  .practice-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--cherry), var(--kirsch-gold), var(--cherry));
+  }
+
+  .practice-frame {
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1.8;
+    color: var(--cream);
+    margin-bottom: 16px;
+  }
+
+  .practice-frame .blank {
+    display: inline-block;
+    min-width: 80px;
+    border-bottom: 4px solid var(--cherry-bright);
+    color: var(--kirsch-gold);
+    margin: 0 4px;
+    padding: 0 8px;
+    font-style: italic;
+  }
+
+  .practice-answer {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--kirsch-gold);
+    margin-bottom: 16px;
+    animation: fadeUp 0.3s ease;
+  }
+
+  .practice-answer .var-part {
+    background: linear-gradient(135deg, var(--variable-bg), var(--kirsch-gold));
+    color: var(--variable-text);
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-weight: 800;
+  }
+
+  .practice-examples {
+    width: 100%;
+    text-align: left;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--cocoa);
+  }
+
+  .practice-examples-title {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--cherry-bright);
+    font-weight: 800;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
+  .practice-example {
+    font-style: italic;
+    font-size: 0.9rem;
+    color: var(--cream);
+    padding: 4px 0 4px 18px;
+    position: relative;
+    line-height: 1.5;
+  }
+
+  .practice-example::before {
+    content: '❝';
+    position: absolute;
+    left: 0;
+    color: var(--cherry);
+  }
+
+  .practice-controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+
+  .practice-btn {
+    flex: 1;
+    min-width: 100px;
+    padding: 14px 12px;
+    border: 2px solid;
+    border-radius: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .practice-btn.again {
+    background: rgba(139,26,26,0.2);
+    border-color: var(--cherry);
+    color: var(--cherry-bright);
+  }
+  .practice-btn.again:hover { background: var(--cherry); color: var(--cream); }
+
+  .practice-btn.hard {
+    background: rgba(160,82,45,0.2);
+    border-color: var(--kirsch);
+    color: var(--kirsch-gold);
+  }
+  .practice-btn.hard:hover { background: var(--kirsch); color: var(--cream); }
+
+  .practice-btn.good {
+    background: rgba(90,122,58,0.2);
+    border-color: var(--success);
+    color: var(--success);
+  }
+  .practice-btn.good:hover { background: var(--success); color: var(--cream); }
+
+  .practice-btn.easy {
+    background: rgba(212,165,116,0.2);
+    border-color: var(--kirsch-gold);
+    color: var(--kirsch-gold);
+  }
+  .practice-btn.easy:hover { background: var(--kirsch-gold); color: var(--dark-choc); }
+
+  .practice-btn .interval-hint {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    margin-top: 2px;
+    opacity: 0.8;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .practice-done {
+    text-align: center;
+    padding: 40px 20px;
+  }
+
+  .practice-done-icon {
+    font-size: 4rem;
+    margin-bottom: 12px;
+  }
+
+  .practice-done h3 {
+    font-family: 'Playfair Display', serif;
+    color: var(--kirsch-gold);
+    font-size: 1.6rem;
+    margin-bottom: 8px;
+  }
+
+  .practice-done p {
+    color: var(--cream);
+    opacity: 0.7;
+    margin-bottom: 20px;
+  }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-overlay.show {
+    display: flex;
+    animation: fadeIn 0.2s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .modal {
+    background: linear-gradient(145deg, var(--milk-choc), var(--bitter));
+    border: 2px solid var(--cherry);
+    border-radius: 20px;
+    padding: 28px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    animation: modalPop 0.3s ease;
+  }
+
+  .modal.wide { max-width: 600px; }
+
+  @keyframes modalPop {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .modal h2 {
+    font-family: 'Playfair Display', serif;
+    color: var(--kirsch-gold);
+    margin-bottom: 16px;
+  }
+
+  .modal label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--cream);
+    opacity: 0.75;
+    font-weight: 700;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .modal-input { margin-bottom: 16px; }
+
+  .manage-tags-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+    max-height: 50vh;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .manage-tag-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--cocoa);
+    border-radius: 10px;
+    transition: all 0.2s;
+  }
+
+  .manage-tag-row:hover { border-color: var(--cherry); }
+
+  .manage-tag-color {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 2px solid rgba(255,255,255,0.1);
+  }
+
+  .manage-tag-name {
+    flex: 1;
+    font-weight: 700;
+    color: var(--cream);
+    font-size: 0.95rem;
+  }
+
+  .manage-tag-count {
+    font-size: 0.75rem;
+    color: var(--cream);
+    opacity: 0.6;
+    font-weight: 600;
+  }
+
+  .manage-tag-actions { display: flex; gap: 6px; }
+
+  .manage-tag-btn {
+    background: transparent;
+    border: 1px solid var(--cocoa);
+    color: var(--cream);
+    opacity: 0.8;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .manage-tag-btn:hover {
+    background: var(--cherry-deep);
+    color: var(--cream);
+    border-color: var(--cherry);
+    opacity: 1;
+  }
+
+  .manage-tag-btn.delete:hover {
+    background: var(--cherry);
+    border-color: var(--cherry);
+  }
+
+  .manage-tags-empty {
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--cream);
+    opacity: 0.6;
+    font-style: italic;
+  }
+
+  /* VERB NORMALIZE MODAL */
+  .verb-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 16px 0;
+    max-height: 50vh;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .verb-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    background: rgba(0,0,0,0.25);
+    border: 1px solid var(--cocoa);
+    border-radius: 10px;
+    transition: all 0.2s;
+  }
+
+  .verb-item:hover {
+    border-color: var(--kirsch-gold);
+    background: rgba(212,165,116,0.08);
+  }
+
+  .verb-item.checked {
+    border-color: var(--kirsch-gold);
+    background: rgba(212,165,116,0.12);
+  }
+
+  .verb-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--kirsch-gold);
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .verb-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .verb-arrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .verb-original {
+    font-weight: 800;
+    color: var(--cherry-bright);
+    font-size: 1rem;
+    text-decoration: line-through;
+    text-decoration-color: var(--cocoa-light);
+    opacity: 0.7;
+  }
+
+  .verb-arrow-icon {
+    color: var(--kirsch-gold);
+    font-size: 1.1rem;
+  }
+
+  .verb-suggested-input {
+    font-weight: 800;
+    color: var(--kirsch-gold);
+    font-size: 1rem;
+    background: rgba(212,165,116,0.15);
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--kirsch-gold);
+    width: 150px;
+    font-family: 'Nunito', sans-serif;
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  .verb-suggested-input:focus {
+    background: rgba(212,165,116,0.25);
+    border-color: var(--cherry-bright);
+    box-shadow: 0 0 0 2px var(--glow-cherry);
+  }
+
+  .verb-meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .verb-type-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+    background: rgba(139,26,26,0.3);
+    color: var(--cherry-bright);
+    border: 1px solid var(--cherry);
+  }
+
+  .verb-confidence {
+    font-size: 0.7rem;
+    color: var(--cream);
+    opacity: 0.6;
+    font-weight: 600;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: linear-gradient(135deg, var(--cherry), var(--cherry-bright));
+    color: var(--cream);
+    padding: 14px 28px;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 0.95rem;
+    z-index: 2000;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    border: 2px solid var(--kirsch-gold);
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  @keyframes snap {
+    0% { transform: scale(1); }
+    30% { transform: scale(0.95) rotate(-1deg); }
+    60% { transform: scale(1.02) rotate(0.5deg); }
+    100% { transform: scale(1) rotate(0); }
+  }
+
+  .snap { animation: snap 0.4s ease; }
+
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: var(--dark-choc); }
+  ::-webkit-scrollbar-thumb { background: var(--cherry-deep); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--cherry); }
+
+  @media (min-width: 520px) {
+    .collection-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 400px) {
+    .logo { font-size: 2rem; }
+    .tab { font-size: 0.65rem; padding: 10px 4px; min-width: 60px; }
+    .practice-frame { font-size: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="lang-toggle-container">
+    <span class="lang-label active" id="labelDE" onclick="setLang('de')">DE</span>
+    <div class="toggle-switch" id="langSwitch" onclick="toggleLang()"></div>
+    <span class="lang-label" id="labelEN" onclick="setLang('en')">EN</span>
+  </div>
+
+  <div class="logo">Kirschholiker <span>🍒</span></div>
+  <div class="tagline" data-i18n="tagline">Deine Kirschsammlung — ein Stück nach dem anderen</div>
+</header>
+
+<div class="stats-bar">
+  <div class="stat">
+    <div class="stat-num" id="statChunks">0</div>
+    <div class="stat-label" data-i18n="statChunks">Brocken</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num" id="statFrames">0</div>
+    <div class="stat-label" data-i18n="statFrames">Rahmen</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num" id="statWords">0</div>
+    <div class="stat-label" data-i18n="statWords">Wörter</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num" id="statTags">0</div>
+    <div class="stat-label" data-i18n="statTags">Tags</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num due" id="statDue">0</div>
+    <div class="stat-label" data-i18n="statDue">Heute fällig</div>
+  </div>
+</div>
+
+<nav class="tabs">
+  <div class="tab active" data-tab="add">
+    <span class="tab-icon">✍️</span> <span data-i18n="tabAdd">Hinzufügen</span>
+  </div>
+  <div class="tab" data-tab="import">
+    <span class="tab-icon">📥</span> <span data-i18n="tabImport">Importieren</span>
+  </div>
+  <div class="tab" data-tab="collection">
+    <span class="tab-icon">🍰</span> <span data-i18n="tabCollection">Sammlung</span>
+  </div>
+  <div class="tab" data-tab="practice">
+    <span class="tab-icon">🎯</span> <span data-i18n="tabPractice">Üben</span>
+  </div>
+  <div class="tab" data-tab="explorer">
+    <span class="tab-icon">🔍</span> <span data-i18n="tabExplorer">Entdecker</span>
+  </div>
+</nav>
+
+<main class="main">
+
+  <div class="panel active" id="panel-add">
+    <h2 class="section-title" data-i18n="addTitle">Schnapp dir einen neuen Brocken</h2>
+    <p class="section-desc" data-i18n="addDesc">Tippe einen Brocken ein, klicke auf Wörter, um variable Teile zu markieren. Füge Beispiele und Tags hinzu.</p>
+
+    <div class="input-wrapper">
+      <textarea class="chunk-input" id="chunkInput" rows="2"
+        placeholder="z.B. die Ergebnisse in Betracht ziehen"></textarea>
+      <div class="hint">
+        💡 <span data-i18n="hintQuick">Schnellmodus:</span> <span data-i18n="hintQuickDesc">Umschließe variable Teile mit Klammern →</span> <code>die {Ergebnisse} in Betracht ziehen</code>
+      </div>
+    </div>
+
+    <div class="tokens-area">
+      <div class="tokens-label" data-i18n="tokensLabel">Klicke auf Wörter, um zwischen variabel/fest zu wechseln</div>
+      <div class="tokens-container" id="tokensContainer">
+        <span class="tokens-empty" data-i18n="tokensEmpty">Beginne oben zu tippen…</span>
+      </div>
+    </div>
+
+    <div class="frame-preview" id="framePreview" style="display:none;">
+      <div class="frame-label" data-i18n="frameLabel">Brocken-Rahmen</div>
+      <div class="frame-text" id="frameText"></div>
+    </div>
+
+    <div class="examples-section">
+      <div class="examples-header">
+        <div class="examples-title">📝 <span data-i18n="exTitle">Beispiele aus dem echten Leben</span></div>
+        <button class="add-example-btn" id="addExampleBtn">+ <span data-i18n="exAdd">Beispiel hinzufügen</span></button>
+      </div>
+      <div class="examples-list" id="examplesList">
+        <div class="examples-empty" data-i18n="exEmpty">Noch keine Beispiele.</div>
+      </div>
+    </div>
+
+    <div class="tags-section">
+      <div class="tags-header">
+        <div class="tags-title">🏷️ Tags</div>
+        <button class="new-tag-btn" id="addNewTagBtn">+ <span data-i18n="tagNew">Neuer Tag</span></button>
+      </div>
+      <div class="tag-chips" id="addTagPicker">
+        <span class="tags-empty" data-i18n="tagEmpty">Noch keine Tags. Erstelle deinen ersten!</span>
+      </div>
+      <div id="addTagCreateForm"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="saveBtn" disabled> <span data-i18n="btnSave">Brocken speichern</span></button>
+      <button class="btn btn-tool" id="infinitivBtn" style="display:none;" onclick="runVerbNormalization()">🔧 <span data-i18n="btnInfinitiv">Infinitiv</span></button>
+      <button class="btn btn-secondary" id="clearBtn"><span data-i18n="btnClear">Löschen</span></button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-import">
+    <h2 class="section-title" data-i18n="impTitle">Massenimport aus Text</h2>
+    <p class="section-desc" data-i18n="impDesc">Füge einen Absatz ein und wähle Brocken — manuell oder automatisch.</p>
+
+    <div class="import-input-section">
+      <textarea class="import-textarea" id="importTextarea" rows="6"
+        placeholder="Füge deinen Text hier ein..."></textarea>
+      <div class="import-length-filter" id="lengthFilterRow">
+        <label data-i18n="impLenLabel">Brockenlänge (nur Auto):</label>
+        <span class="length-chip active" data-length="all" data-i18n="lenAll">Alle</span>
+        <span class="length-chip" data-length="2">2 <span data-i18n="lenWords">Wörter</span></span>
+        <span class="length-chip" data-length="3">3 <span data-i18n="lenWords">Wörter</span></span>
+        <span class="length-chip" data-length="4">4 <span data-i18n="lenWords">Wörter</span></span>
+        <span class="length-chip" data-length="5">5+ <span data-i18n="lenWords">Wörter</span></span>
+      </div>
+      <div class="btn-row" style="margin-top: 16px;">
+        <button class="btn btn-primary" id="analyzeBtn">🔍 <span data-i18n="btnAnalyze">Text analysieren</span></button>
+        <button class="btn btn-secondary" id="clearImportBtn"><span data-i18n="btnClear">Löschen</span></button>
+      </div>
+    </div>
+
+    <div id="importWorkspace" style="display:none;">
+      <div class="import-mode-tabs">
+        <button class="import-mode-tab active" data-mode="manual">🖐️ <span data-i18n="modeManual">Manuell auswählen</span></button>
+        <button class="import-mode-tab" data-mode="auto"> <span data-i18n="modeAuto">Auto-Kandidaten</span></button>
+      </div>
+
+      <div class="import-mode-panel active" id="manualModePanel">
+        <div style="font-size:0.8rem;color:var(--kirsch-gold);margin-bottom:10px;font-weight:700;" data-i18n="manualHint">
+          💡 Klicke auf Wörter, um sie auszuwählen. Du kannst auch nicht zusammenhängende Wörter wählen.
+        </div>
+        <div class="interactive-text" id="interactiveText"></div>
+        <div id="selectionPreviewArea"></div>
+      </div>
+
+      <div class="import-mode-panel" id="autoModePanel">
+        <div id="autoCandidatesArea"></div>
+      </div>
+
+      <div id="manualCandidatesSection" style="display:none;">
+        <h3 class="section-title" style="font-size:1.1rem;margin-top:20px;" data-i18n="selTitle">Deine ausgewählten Brocken</h3>
+        <div style="font-size:0.8rem;color:var(--kirsch-gold);margin-bottom:10px;font-weight:700;" data-i18n="dragHint">
+          💡 Ziehe die Wörter innerhalb eines Brockens, um ihre Reihenfolge zu ändern.
+        </div>
+        <div class="manual-candidates-list" id="manualCandidatesList"></div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="importManualBtn">🍒 <span data-i18n="btnImportAll">Alle importieren</span></button>
+          <button class="btn btn-secondary" id="clearManualBtn"><span data-i18n="btnRemoveAll">Alle entfernen</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-collection">
+    <h2 class="section-title" data-i18n="colTitle">Meine Kirschkollektion</h2>
+    <p class="section-desc" data-i18n="colDesc">Alle deine gespeicherten Brocken. 💡 Klicke auf ein Wort, um es im Entdecker zu erkunden.</p>
+
+    <div class="search-bar">
+      <div class="search-input-wrapper">
+        <span class="search-icon">🔎</span>
+        <input type="text" class="search-input" id="searchInput" placeholder="Brocken suchen…">
+      </div>
+      <button class="btn btn-secondary" id="toggleSelectBtn" onclick="toggleSelectionMode()" style="padding:10px 16px;">☑️ <span data-i18n="selectModeBtn">Wählen</span></button>
+    </div>
+
+    <!-- Folder Bar - horizontal above chunks -->
+<div class="folder-bar">
+  <div class="folder-bar-header">
+    <span class="folder-bar-title" data-i18n="foldersTitle">📁 Ordner</span>
+    <button class="new-folder-btn" id="newFolderBtn">+ <span data-i18n="folderNew">Neu</span></button>
+  </div>
+  <div id="folderList" class="folder-list-horizontal"></div>
+  <div id="folderCreateForm"></div>
+</div>
+
+<div class="tag-filter-bar" id="tagFilterBar"></div>
+<div class="collection-grid" id="collectionGrid"></div>
+    
+    <div id="bulkActionsBar" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--bitter); border:2px solid var(--kirsch-gold); padding:10px 20px; border-radius:30px; z-index:100; box-shadow:0 10px 30px rgba(0,0,0,0.5); gap:10px; align-items:center;">
+       <button class="btn btn-secondary" onclick="selectAllVisible()" style="padding:8px 16px; font-size:0.8rem;">☑️ <span data-i18n="selectAll">Alle wählen</span></button>
+       <button class="btn btn-secondary" onclick="showBulkTagModal()" style="padding:8px 16px; font-size:0.8rem;">🏷️ <span data-i18n="bulkAddTag">Tag hinzufügen</span></button>
+       <button class="btn btn-secondary" onclick="showBulkFolderModal()" style="padding:8px 16px; font-size:0.8rem;">📁 <span data-i18n="bulkMoveFolder">In Ordner verschieben</span></button>
+       <button class="btn btn-danger" onclick="deleteSelectedChunks()" style="padding:8px 16px; font-size:0.8rem; background:var(--danger); color:white;">🗑️ <span data-i18n="deleteSelected">Löschen</span></button>
+       <button class="btn btn-secondary" onclick="toggleSelectionMode()" style="padding:8px 16px; font-size:0.8rem;">✕ <span data-i18n="cancel">Abbrechen</span></button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-practice">
+    <h2 class="section-title" data-i18n="pracTitle">Übungseinheit</h2>
+    <p class="section-desc" data-i18n="pracDesc">Verteilte Wiederholung — wiederhole Brocken genau dann, wenn du sie fast vergessen hast.</p>
+
+    <div class="practice-header">
+      <div class="practice-count" id="practiceCount">0</div>
+      <div class="practice-count-label" id="practiceCountLabel" data-i18n="pracDue">Brocken heute fällig</div>
+    </div>
+
+    <div id="practiceArea"></div>
+  </div>
+
+  <div class="panel" id="panel-explorer">
+    <h2 class="section-title" data-i18n="expTitle">Wort-Entdecker</h2>
+    <p class="section-desc" data-i18n="expDesc">Klicke auf ein Wort, um alle Brocken zu sehen, in denen es vorkommt.</p>
+
+    <div class="explorer-toolbar">
+      <input type="text" class="explorer-search" id="explorerSearch" placeholder="Wörter filtern…">
+      <button class="clear-selection-btn" id="clearSelectionBtn">✕ <span data-i18n="btnClearSel">Auswahl löschen</span></button>
+    </div>
+
+    <div class="word-cloud" id="wordCloud"></div>
+    <div class="explorer-results" id="explorerResults"></div>
+    
+    <div id="explorerBulkActionsBar" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--bitter); border:2px solid var(--kirsch-gold); padding:10px 20px; border-radius:30px; z-index:100; box-shadow:0 10px 30px rgba(0,0,0,0.5); gap:10px; align-items:center;">
+       <button class="btn btn-secondary" onclick="selectAllExplorer()" style="padding:8px 16px; font-size:0.8rem;">☑️ <span data-i18n="selectAll">Alle wählen</span></button>
+       <button class="btn btn-secondary" onclick="showBulkTagModal()" style="padding:8px 16px; font-size:0.8rem;">🏷️ <span data-i18n="bulkAddTag">Tag hinzufügen</span></button>
+       <button class="btn btn-secondary" onclick="showBulkFolderModal()" style="padding:8px 16px; font-size:0.8rem;">📁 <span data-i18n="bulkMoveFolder">In Ordner verschieben</span></button>
+       <button class="btn btn-danger" onclick="deleteSelectedChunks()" style="padding:8px 16px; font-size:0.8rem; background:var(--danger); color:white;">🗑️ <span data-i18n="deleteSelected">Löschen</span></button>
+       <button class="btn btn-secondary" onclick="toggleSelectionMode()" style="padding:8px 16px; font-size:0.8rem;">✕ <span data-i18n="cancel">Abbrechen</span></button>
+    </div>
+  </div>
+
+</main>
+
+<!-- Bulk Tag Modal -->
+<div class="modal-overlay" id="bulkTagModal">
+  <div class="modal">
+    <h2>🏷️ <span data-i18n="bulkAddTag">Tag zu ausgewählten Brocken hinzufügen</span></h2>
+    <p style="color:var(--cream);opacity:0.75;font-size:0.85rem;margin-bottom:16px;">
+      <span data-i18n="bulkTagDesc">Wähle einen bestehenden Tag oder erstelle einen neuen.</span>
+    </p>
+    <div class="tag-chips" id="bulkTagPicker"></div>
+    <div id="bulkTagCreateForm"></div>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-primary" id="bulkTagApplyBtn"><span data-i18n="btnApply">Anwenden</span></button>
+      <button class="btn btn-secondary" id="bulkTagCancelBtn"><span data-i18n="btnCancel">Abbrechen</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Folder Modal -->
+<div class="modal-overlay" id="bulkFolderModal">
+  <div class="modal">
+    <h2>📁 <span data-i18n="bulkMoveFolder">In Ordner verschieben</span></h2>
+    <p style="color:var(--cream);opacity:0.75;font-size:0.85rem;margin-bottom:16px;">
+      <span data-i18n="bulkFolderDesc">Wähle einen Ordner für die ausgewählten Brocken.</span>
+    </p>
+    <div id="bulkFolderPicker"></div>
+    <div id="bulkFolderCreateForm"></div>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-primary" id="bulkFolderApplyBtn"><span data-i18n="btnApply">Anwenden</span></button>
+      <button class="btn btn-secondary" id="bulkFolderCancelBtn"><span data-i18n="btnCancel">Abbrechen</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h2 data-i18n="editTitle">✏️ Brocken bearbeiten</h2>
+    <label data-i18n="editFull">Voller Brockentext:</label>
+    <input type="text" class="modal-input" id="editFullInput">
+    <label data-i18n="editVars">Variable Teile (kommagetrennt):</label>
+    <input type="text" class="modal-input" id="editVarsInput">
+    <label data-i18n="editEx">Beispiele (eines pro Zeile):</label>
+    <textarea class="modal-input" id="editExamplesInput" rows="4"></textarea>
+    <label>Tags:</label>
+    <div class="tag-chips" id="editTagPicker"></div>
+    <div id="editTagCreateForm" style="margin-top:10px;"></div>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-primary" id="editSaveBtn" data-i18n="btnSaveChanges">Änderungen speichern</button>
+      <button class="btn btn-secondary" id="editCancelBtn" data-i18n="btnCancel">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="manageTagsModal">
+  <div class="modal wide">
+    <h2 data-i18n="manageTagsTitle">🏷️ Tags verwalten</h2>
+    <p style="color:var(--cream);opacity:0.75;font-size:0.85rem;margin-bottom:16px;" data-i18n="manageTagsDesc">Tags umbenennen, umfärben oder löschen.</p>
+    <div class="manage-tags-list" id="manageTagsList"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="manageTagsNewBtn">+ <span data-i18n="tagNew">Neuen Tag erstellen</span></button>
+      <button class="btn btn-secondary" id="manageTagsCloseBtn" data-i18n="btnClose">Schließen</button>
+    </div>
+    <div id="manageTagCreateForm" style="margin-top:16px;"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="verbNormalizeModal">
+  <div class="modal">
+    <h2>🔧 <span data-i18n="verbModalTitle">Verbformen erkennen</span></h2>
+    <p style="color:var(--cream);opacity:0.75;font-size:0.85rem;margin-bottom:8px;" data-i18n="verbModalDesc">
+      Wir haben Verbformen in deinem Brocken gefunden. Wähle aus, welche zum Infinitiv umgewandelt werden sollen:
+    </p>
+    <div class="verb-list" id="verbList"></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="verbApplyBtn" data-i18n="btnApply">Anwenden</button>
+      <button class="btn btn-secondary" id="verbSkipBtn" data-i18n="btnSkip">Überspringen</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="bg-status" id="bgStatus"></div>
+
+<script>
+// ==================== VERB DICTIONARIES (shortened for brevity) ====================
+const VERBS_DE_IRREGULAR = {
+  'bin': 'sein', 'bist': 'sein', 'ist': 'sein', 'sind': 'sein', 'seid': 'sein',
+  'war': 'sein', 'warst': 'sein', 'wart': 'sein', 'waren': 'sein', 'gewesen': 'sein',
+  'habe': 'haben', 'hast': 'haben', 'hat': 'haben', 'habt': 'haben',
+  'hatte': 'haben', 'hattest': 'haben', 'hattet': 'haben', 'hatten': 'haben', 'gehabt': 'haben',
+  'werde': 'werden', 'wirst': 'werden', 'wird': 'werden', 'werdet': 'werden',
+  'wurde': 'werden', 'wurdest': 'werden', 'wurdet': 'werden', 'wurden': 'werden', 'geworden': 'werden',
+  'kann': 'können', 'kannst': 'können', 'könnt': 'können',
+  'konnte': 'können', 'konntest': 'können', 'konntet': 'können', 'konnten': 'können', 'gekonnt': 'können',
+  'muss': 'müssen', 'muß': 'müssen', 'musst': 'müssen', 'müsst': 'müssen',
+  'musste': 'müssen', 'musstest': 'müssen', 'musstet': 'müssen', 'mussten': 'müssen', 'gemusst': 'müssen',
+  'will': 'wollen', 'willst': 'wollen', 'wollt': 'wollen',
+  'wollte': 'wollen', 'wolltest': 'wollen', 'wolltet': 'wollen', 'wollten': 'wollen', 'gewollt': 'wollen',
+  'soll': 'sollen', 'sollst': 'sollen',
+  'sollte': 'sollen', 'solltest': 'sollen', 'solltet': 'sollen', 'sollten': 'sollen',
+  'darf': 'dürfen', 'darfst': 'dürfen', 'dürft': 'dürfen',
+  'durfte': 'dürfen', 'durftest': 'dürfen', 'durftet': 'dürfen', 'durften': 'dürfen',
+  'mag': 'mögen', 'magst': 'mögen', 'mögt': 'mögen',
+  'mochte': 'mögen', 'mochtest': 'mögen', 'mochtet': 'mögen', 'mochten': 'mögen',
+  'weiß': 'wissen', 'weiss': 'wissen', 'weißt': 'wissen', 'weisst': 'wissen', 'wisst': 'wissen',
+  'wusste': 'wissen', 'wusstest': 'wissen', 'wusstet': 'wissen', 'wussten': 'wissen', 'gewusst': 'wissen',
+};
+
+const VERBS_EN_IRREGULAR = {
+  'is': 'be', 'am': 'be', 'are': 'be', 'was': 'be', 'were': 'be', 'been': 'be', 'being': 'be',
+  'has': 'have', 'had': 'have', 'having': 'have',
+  'does': 'do', 'did': 'do', 'doing': 'do', 'done': 'do',
+  'goes': 'go', 'went': 'go', 'gone': 'go', 'going': 'go',
+  'takes': 'take', 'took': 'take', 'taken': 'take', 'taking': 'take',
+  'makes': 'make', 'made': 'make', 'making': 'make',
+  'sees': 'see', 'saw': 'see', 'seen': 'see', 'seeing': 'see',
+  'comes': 'come', 'came': 'come', 'coming': 'come',
+  'gets': 'get', 'got': 'get', 'gotten': 'get', 'getting': 'get',
+};
+
+const COMMON_INFINITIVES_DE = new Set([
+  'sein', 'haben', 'werden', 'können', 'müssen', 'wollen', 'sollen', 'dürfen', 'mögen',
+  'wissen', 'denken', 'bringen', 'kommen', 'gehen', 'sehen', 'geben', 'nehmen', 'tun',
+  'finden', 'bleiben', 'stehen', 'liegen', 'sitzen', 'lassen', 'fahren', 'laufen',
+  'sprechen', 'schreiben', 'lesen', 'helfen', 'fallen', 'halten', 'heißen', 'tragen',
+  'wachsen', 'beginnen', 'gewinnen', 'brechen', 'treffen', 'sterben', 'vergessen',
+  'ziehen', 'bitten', 'arbeiten', 'machen', 'sagen', 'fragen', 'antworten', 'lernen',
+]);
+
+function detectRegularVerbDE(word) {
+  const lower = word.toLowerCase();
+  if (lower.length < 3) return null;
+  if (word[0] === word[0].toUpperCase() && word[0] !== word[0].toLowerCase()) return null;
+  if (lower.endsWith('en') && lower.length > 3) return null;
+  if (lower.startsWith('ge') && lower.endsWith('t') && lower.length > 5) {
+    const stem = lower.slice(2, -1);
+    const infinitive = stem + 'en';
+    if (COMMON_INFINITIVES_DE.has(infinitive)) return infinitive;
+  }
+  if (lower.endsWith('te') && lower.length > 3) {
+    const stem = lower.slice(0, -2);
+    const infinitive = stem + 'en';
+    if (COMMON_INFINITIVES_DE.has(infinitive)) return infinitive;
+  }
+  if (lower.endsWith('t') && lower.length > 3 && !lower.endsWith('igt') && !lower.endsWith('cht')) {
+    const stem = lower.slice(0, -1);
+    const infinitive = stem + 'en';
+    if (COMMON_INFINITIVES_DE.has(infinitive)) return infinitive;
+  }
+  if (lower.endsWith('e') && lower.length > 3 && !lower.endsWith('ie') && !lower.endsWith('che')) {
+    const infinitive = lower + 'n';
+    if (COMMON_INFINITIVES_DE.has(infinitive)) return infinitive;
+  }
+  return null;
+}
+
+function detectRegularVerbEN(word) {
+  const lower = word.toLowerCase();
+  if (lower.length < 3) return null;
+  if (lower.endsWith('s') && !lower.endsWith('ss') && lower.length > 3) return lower.slice(0, -1);
+  if (lower.endsWith('ing') && lower.length > 5) return lower.slice(0, -3) + 'e';
+  if (lower.endsWith('ed') && lower.length > 4) return lower.slice(0, -2);
+  return null;
+}
+
+function detectVerbForms(parts) {
+  const suggestions = [];
+  const dict = currentLang === 'de' ? VERBS_DE_IRREGULAR : VERBS_EN_IRREGULAR;
+  const regularDetector = currentLang === 'de' ? detectRegularVerbDE : detectRegularVerbEN;
+  
+  parts.forEach((part, idx) => {
+    const word = part.word;
+    const lower = word.toLowerCase().replace(/[^a-z0-9äöüß'-]/g, '');
+    if (lower.length < 2) return;
+    if (currentLang === 'de' && word[0] === word[0].toUpperCase() && word[0] !== word[0].toLowerCase()) return;
+    if (dict[lower] && dict[lower] !== lower) {
+      suggestions.push({ idx, original: word, suggested: dict[lower], type: 'irregular', confidence: 95 });
+      return;
+    }
+    const regular = regularDetector(word);
+    if (regular && regular !== lower && regular.length > 2) {
+      suggestions.push({ idx, original: word, suggested: regular, type: 'regular', confidence: 70 });
+    }
+  });
+  return suggestions;
+}
+
+// ==================== LOCALIZATION ====================
+const translations = {
+  de: {
+    tagline: "Deine Kirschsammlung — ein Stück nach dem anderen",
+    statChunks: "Brocken", statFrames: "Rahmen", statWords: "Wörter", statTags: "Tags", statDue: "Heute fällig",
+    tabAdd: "Hinzufügen", tabImport: "Importieren", tabCollection: "Sammlung", tabPractice: "Üben", tabExplorer: "Entdecker",
+    addTitle: "Schnapp dir einen neuen Brocken", addDesc: "Tippe einen Brocken ein, klicke auf Wörter, um variable Teile zu markieren. Füge Beispiele und Tags hinzu.",
+    hintQuick: "Schnellmodus:", hintQuickDesc: "Umschließe variable Teile mit Klammern →",
+    tokensLabel: "Klicke auf Wörter, um zwischen variabel/fest zu wechseln", tokensEmpty: "Beginne oben zu tippen…",
+    frameLabel: "Brocken-Rahmen", exTitle: "Beispiele aus dem echten Leben", exAdd: "Beispiel hinzufügen", exEmpty: "Noch keine Beispiele.",
+    tagNew: "Neuer Tag", tagEmpty: "Noch keine Tags. Erstelle deinen ersten!", btnSave: "Brocken speichern", btnClear: "Löschen",
+    btnInfinitiv: "Infinitiv",
+    impTitle: "Massenimport aus Text", impDesc: "Füge einen Absatz ein und wähle Brocken — manuell oder automatisch.",
+    impLenLabel: "Brockenlänge (nur Auto):", lenAll: "Alle", lenWords: "Wörter", btnAnalyze: "Text analysieren",
+    modeManual: "Manuell auswählen", modeAuto: "Auto-Kandidaten",
+    manualHint: "💡 Klicke auf Wörter, um sie auszuwählen. Du kannst auch nicht zusammenhängende Wörter wählen.",
+    selTitle: "Deine ausgewählten Brocken", dragHint: " Ziehe die Wörter innerhalb eines Brockens, um ihre Reihenfolge zu ändern.",
+    btnImportAll: "Alle importieren", btnRemoveAll: "Alle entfernen",
+    colTitle: "Meine Kirschkollektion", colDesc: "Alle deine gespeicherten Brocken. 💡 Klicke auf ein Wort, um es im Entdecker zu erkunden.",
+    pracTitle: "Übungseinheit", pracDesc: "Verteilte Wiederholung — wiederhole Brocken genau dann, wenn du sie fast vergessen hast.",
+    pracDue: "Brocken heute fällig", expTitle: "Wort-Entdecker", expDesc: "Klicke auf ein Wort, um alle Brocken zu sehen, in denen es vorkommt.",
+    btnClearSel: "Auswahl löschen", editTitle: "✏️ Brocken bearbeiten", editFull: "Voller Brockentext:", editVars: "Variable Teile (kommagetrennt):",
+    editEx: "Beispiele (eines pro Zeile):", btnSaveChanges: "Änderungen speichern", btnCancel: "Abbrechen",
+    manageTagsTitle: "🏷️ Tags verwalten", manageTagsDesc: "Tags umbenennen, umfärben oder löschen.", btnClose: "Schließen",
+    searchPlaceholder: "Brocken suchen…", filterPlaceholder: "Wörter filtern…",
+    toastSaved: "🍒 Brocken gespeichert!", toastRemoved: "Brocken entfernt 🗑️", toastUpdated: "Brocken aktualisiert ✏️",
+    noMatches: "Keine Treffer gefunden", emptyBox: "Deine Sammlung ist leer", emptyStart: "Füge deinen ersten Brocken hinzu!",
+    confirmDelete: "Diesen Brocken löschen?", confirmRemoveAll: "Alle ausgewählten Brocken entfernen?",
+    selectAll: "Alle wählen", deleteSelected: "Löschen", cancel: "Abbrechen",
+    selectModeBtn: "☑️ Wählen",
+    verbModalTitle: "Verbformen erkennen",
+    verbModalDesc: "Wir haben Verbformen in deinem Brocken gefunden. Wähle aus, welche zum Infinitiv umgewandelt werden sollen:",
+    btnApply: "Anwenden", btnSkip: "Überspringen",
+    demoPlaceholder: "z.B. Er macht sich Sorgen",
+    importPlaceholder: "Füge deinen Text hier ein...",
+    examplePlaceholder: "Schreibe einen Satz…",
+    autoEditHint: " Hover auf ein Wort zum Löschen (✕). Klick zum Umschalten variabel/fest.",
+    addModified: " Bearbeiten & Hinzufügen",
+    resetCard: "↩️ Zurücksetzen",
+    bulkAddTag: "Tag hinzufügen",
+    bulkTagDesc: "Wähle einen bestehenden Tag oder erstelle einen neuen.",
+    bulkMoveFolder: "In Ordner verschieben",
+    bulkFolderDesc: "Wähle einen Ordner für die ausgewählten Brocken.",
+    foldersTitle: "Ordner",
+    folderNew: "Neu",
+    folderAll: "Alle",
+    folderUncategorized: "Ohne Ordner",
+    folderDeleteConfirm: "Ordner wirklich löschen? Die enthaltenen Brocken werden nicht gelöscht.",
+    folderNamePlaceholder: "Ordnername…"
+  },
+  en: {
+    tagline: "Your chunk collection, one piece at a time",
+    statChunks: "Chunks", statFrames: "Frames", statWords: "Words", statTags: "Tags", statDue: "Due Today",
+    tabAdd: "Add", tabImport: "Import", tabCollection: "Collection", tabPractice: "Practice", tabExplorer: "Explorer",
+    addTitle: "Snap a New Chunk", addDesc: "Type a chunk and click words to mark variable parts. Add examples and tags.",
+    hintQuick: "Quick mode:", hintQuickDesc: "Wrap variable parts in braces →",
+    tokensLabel: "Click words to toggle variable / fixed", tokensEmpty: "Start typing above…",
+    frameLabel: "Chunk Frame", exTitle: "Real-life examples", exAdd: "Add example", exEmpty: "No examples yet.",
+    tagNew: "New tag", tagEmpty: "No tags yet. Create your first one!", btnSave: "Save Chunk", btnClear: "Clear",
+    btnInfinitiv: "Infinitive",
+    impTitle: "Bulk Import from Text", impDesc: "Paste a paragraph and pick chunks — manually or automatically.",
+    impLenLabel: "Chunk length (Auto only):", lenAll: "All", lenWords: "words", btnAnalyze: "Analyze Text",
+    modeManual: "Manual Selection", modeAuto: "Auto Candidates",
+    manualHint: "💡 Click words to select them. You can also select non-consecutive words.",
+    selTitle: "Your Selected Chunks", dragHint: "💡 Drag words within a chunk to reorder them.",
+    btnImportAll: "Import All", btnRemoveAll: "Remove All",
+    colTitle: "My Chocolate Box", colDesc: "All your saved chunks. 💡 Click any word to explore it in Explorer.",
+    pracTitle: "Practice Session", pracDesc: "Spaced repetition — review chunks right when you're about to forget them.",
+    pracDue: "chunks due today", expTitle: "Word Explorer", expDesc: "Click a word to see all chunks where it appears.",
+    btnClearSel: "Clear selection", editTitle: "✏️ Edit Chunk", editFull: "Full chunk text:", editVars: "Variable parts (comma-separated):",
+    editEx: "Examples (one per line):", btnSaveChanges: "Save Changes", btnCancel: "Cancel",
+    manageTagsTitle: "🏷️ Manage Tags", manageTagsDesc: "Rename, recolor or delete tags.", btnClose: "Close",
+    searchPlaceholder: "Search chunks…", filterPlaceholder: "Filter words…",
+    toastSaved: "🍫 Chunk saved!", toastRemoved: "Chunk removed 🗑️", toastUpdated: "Chunk updated ✏️",
+    noMatches: "No matches found", emptyBox: "Your box is empty", emptyStart: "Add your first chunk to get started!",
+    confirmDelete: "Delete this chunk?", confirmRemoveAll: "Remove all selected chunks?",
+    selectAll: "Select All", deleteSelected: "Delete", cancel: "Cancel",
+    selectModeBtn: "☑️ Select",
+    verbModalTitle: "Detect verb forms",
+    verbModalDesc: "We found verb forms in your chunk. Select which ones should be converted to infinitive:",
+    btnApply: "Apply", btnSkip: "Skip",
+    demoPlaceholder: "e.g. The plane takes off",
+    importPlaceholder: "Paste your text here...",
+    examplePlaceholder: "Type a sentence…",
+    autoEditHint: "💡 Hover a word to delete (✕). Click to toggle variable/fixed.",
+    addModified: "➕ Edit & Add",
+    resetCard: "↩️ Reset",
+    bulkAddTag: "Add tag",
+    bulkTagDesc: "Select an existing tag or create a new one.",
+    bulkMoveFolder: "Move to folder",
+    bulkFolderDesc: "Select a folder for the selected chunks.",
+    foldersTitle: "Folders",
+    folderNew: "New",
+    folderAll: "All",
+    folderUncategorized: "Uncategorized",
+    folderDeleteConfirm: "Delete this folder? The chunks inside will not be deleted.",
+    folderNamePlaceholder: "Folder name…"
+  }
+};
+
+let currentLang = 'de';
+
+function setLang(lang) {
+  currentLang = lang;
+  document.documentElement.lang = lang;
+  const switchEl = document.getElementById('langSwitch');
+  const labelDE = document.getElementById('labelDE');
+  const labelEN = document.getElementById('labelEN');
+  if (lang === 'en') {
+    switchEl.classList.add('en');
+    labelEN.classList.add('active');
+    labelDE.classList.remove('active');
+  } else {
+    switchEl.classList.remove('en');
+    labelDE.classList.add('active');
+    labelEN.classList.remove('active');
+  }
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    if (translations[lang][key]) {
+      el.textContent = translations[lang][key];
+    }
+  });
+  $('chunkInput').placeholder = translations[lang].demoPlaceholder;
+  $('importTextarea').placeholder = translations[lang].importPlaceholder;
+  $('searchInput').placeholder = translations[lang].searchPlaceholder;
+  $('explorerSearch').placeholder = translations[lang].filterPlaceholder;
+  renderExamples(); 
+  renderFolders();
+  renderCollection(searchInput.value);
+  updateInfinitivButton();
+}
+
+function toggleLang() {
+  setLang(currentLang === 'de' ? 'en' : 'de');
+}
+
+// ==================== DATA LAYER ====================
+const STORAGE_KEY = 'kirschholiker_brocken_v1';
+const TAGS_KEY = 'kirschholiker_tags_v1';
+const FOLDERS_KEY = 'kirschholiker_folders_v1';
+
+const BG_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/Neuschwanstein_Castle_%282011%29.jpg/1600px-Neuschwanstein_Castle_%282011%29.jpg';
+
+function loadBackground() {
+  const testImg = new Image();
+  testImg.onload = () => {
+    document.documentElement.style.setProperty('--bg-image', `url('${BG_URL}')`);
+  };
+  testImg.onerror = () => {
+    document.body.classList.add('bg-failed');
+  };
+  testImg.src = BG_URL;
+}
+loadBackground();
+
+function loadChunks() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch { return []; }
+}
+
+function migrateChunk(c) {
+  return {
+    ...c,
+    examples: c.examples || [],
+    tags: c.tags || [],
+    folder: c.folder || null,
+    nextReview: c.nextReview || null,
+    interval: c.interval || 0,
+    ease: c.ease || 2.5,
+    repetitions: c.repetitions || 0,
+    lastReview: c.lastReview || null,
+    status: c.status || 'new'
+  };
+}
+
+function saveChunks(chunks) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(chunks));
+}
+
+function loadTags() {
+  try { return JSON.parse(localStorage.getItem(TAGS_KEY)) || []; }
+  catch { return []; }
+}
+
+function saveTags(tags) {
+  localStorage.setItem(TAGS_KEY, JSON.stringify(tags));
+}
+
+function loadFolders() {
+  try { return JSON.parse(localStorage.getItem(FOLDERS_KEY)) || []; }
+  catch { return []; }
+}
+
+function saveFolders(folders) {
+  localStorage.setItem(FOLDERS_KEY, JSON.stringify(folders));
+}
+
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+const DEFAULT_PALETTE = ['#8B1A1A', '#C41E3A', '#D4A574', '#A0522D', '#5A7A3A', '#4A7BA6', '#6B3A2A', '#B85C3A', '#7A5A9A', '#3A7A6B'];
+
+function getNextDefaultColor() {
+  const usedColors = new Set(tags.map(t => t.color.toLowerCase()));
+  for (const color of DEFAULT_PALETTE) {
+    if (!usedColors.has(color.toLowerCase())) return color;
+  }
+  return DEFAULT_PALETTE[Math.floor(Math.random() * DEFAULT_PALETTE.length)];
+}
+
+function createTag(name, color) {
+  const tag = { id: generateId(), name: name.trim(), color: color || getNextDefaultColor(), createdAt: Date.now() };
+  tags.push(tag);
+  saveTags(tags);
+  updateStats();
+  return tag;
+}
+
+function deleteTag(tagId) {
+  tags = tags.filter(t => t.id !== tagId);
+  chunks.forEach(c => { if (c.tags && c.tags.includes(tagId)) c.tags = c.tags.filter(id => id !== tagId); });
+  saveTags(tags);
+  saveChunks(chunks);
+  updateStats();
+}
+
+function updateTag(tagId, updates) {
+  const idx = tags.findIndex(t => t.id === tagId);
+  if (idx === -1) return;
+  tags[idx] = { ...tags[idx], ...updates };
+  saveTags(tags);
+}
+
+function getTagById(id) { return tags.find(t => t.id === id); }
+
+function getTagUsageCount(tagId) {
+  return chunks.filter(c => c.tags && c.tags.includes(tagId)).length;
+}
+
+// ==================== FOLDERS ====================
+function createFolder(name) {
+  const folder = { id: generateId(), name: name.trim(), createdAt: Date.now() };
+  folders.push(folder);
+  saveFolders(folders);
+  renderFolders();
+  renderCollection(searchInput.value);
+  return folder;
+}
+
+function deleteFolder(folderId) {
+  if (!confirm(translations[currentLang].folderDeleteConfirm)) return;
+  folders = folders.filter(f => f.id !== folderId);
+  chunks.forEach(c => { if (c.folder === folderId) c.folder = null; });
+  saveFolders(folders);
+  saveChunks(chunks);
+  if (activeFolderFilter === folderId) activeFolderFilter = null;
+  renderFolders();
+  renderCollection(searchInput.value);
+  updateStats();
+  showToast('📁 ' + (currentLang === 'de' ? 'Ordner gelöscht' : 'Folder deleted'));
+}
+
+function getFolderCount(folderId) {
+  return chunks.filter(c => c.folder === folderId).length;
+}
+
+// ==================== STOP WORDS ====================
+const STOP_WORDS_DE = new Set([
+  'der', 'die', 'das', 'den', 'dem', 'des', 'ein', 'eine', 'einem', 'einen', 'einer', 'eines',
+  'und', 'oder', 'aber', 'denn', 'weil', 'dass', 'ob', 'wenn', 'als', 'wie', 'ich', 'du',
+  'er', 'sie', 'es', 'wir', 'ihr', 'mein', 'dein', 'sein', 'unser', 'euer', 'dieser', 'diese',
+  'dieses', 'jener', 'jene', 'jenes', 'welcher', 'welche', 'welches', 'was', 'wer', 'wo',
+  'wann', 'warum', 'hier', 'dort', 'da', 'dann', 'jetzt', 'heute', 'morgen', 'gestern',
+  'immer', 'nie', 'niemals', 'oft', 'manchmal', 'sehr', 'auch', 'nur', 'noch', 'schon',
+  'nicht', 'kein', 'keine', 'keinem', 'keinen', 'keiner', 'ja', 'nein', 'doch',
+  'zu', 'auf', 'in', 'an', 'mit', 'von', 'bei', 'nach', 'aus',
+  'durch', 'für', 'gegen', 'ohne', 'um', 'bis', 'seit', 'über', 'unter', 'vor', 'zwischen',
+  'sich', 'mir', 'dich', 'ihn', 'uns', 'euch', 'ihnen', 'ihm', 'so', 'mal',
+  'eben', 'halt', 'wohl', 'erst', 'recht', 'ganz'
+]);
+
+const STOP_WORDS_EN = new Set([
+  'the', 'a', 'an', 'to', 'of', 'in', 'on', 'at', 'for', 'with', 'by', 'from', 'about',
+  'against', 'between', 'through', 'during', 'before', 'after', 'above', 'below', 'up',
+  'down', 'out', 'off', 'over', 'under', 'into', 'onto', 'i', 'me', 'my', 'mine', 'myself',
+  'you', 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she',
+  'her', 'hers', 'herself', 'it', 'its', 'itself', 'we', 'us', 'our', 'ours', 'ourselves',
+  'they', 'them', 'their', 'theirs', 'themselves', 'this', 'that', 'these', 'those', 'what',
+  'which', 'who', 'whom', 'whose', 'where', 'when', 'why', 'how', 'and', 'or', 'but', 'nor',
+  'yet', 'so', 'because', 'although', 'while', 'if', 'unless', 'since', 'as', 'than',
+  'whether', 'not', 'no', 'yes', 'very', 'just', 'only', 'also', 'too', 'even', 'still',
+  'already', 'always', 'never', 'often', 'sometimes', 'usually', 'here', 'there', 'then',
+  'now', 'once', 'again', 'further', 'all', 'each', 'every', 'both', 'few', 'more', 'most',
+  'other', 'some', 'such', 'any', 'much', 'many', 'enough'
+]);
+
+function getStopWords() {
+  return currentLang === 'de' ? STOP_WORDS_DE : STOP_WORDS_EN;
+}
+
+function normalizeWord(word) {
+  let lower = word.toLowerCase().replace(/[^a-z0-9äöüß'-]/g, '');
+  if (lower.length < 3) return lower;
+  if (currentLang === 'de') {
+    if (lower.endsWith('te') && lower.length > 4) return lower.slice(0, -2) + 'en';
+    if (lower.endsWith('t') && lower.length > 3 && !lower.endsWith('igt') && !lower.endsWith('cht')) return lower.slice(0, -1) + 'en';
+    if (lower.endsWith('e') && lower.length > 3 && !lower.endsWith('ie') && !lower.endsWith('che')) return lower.slice(0, -1) + 'en';
+  } else {
+    if (lower.endsWith('s') && !lower.endsWith('ss') && lower.length > 3) return lower.slice(0, -1);
+    if (lower.endsWith('ed') && lower.length > 4) return lower.slice(0, -2);
+    if (lower.endsWith('ing') && lower.length > 5) return lower.slice(0, -3) + 'e';
+  }
+  return lower;
+}
+
+function parseChunkText(text) {
+  const braceRegex = /\{([^}]+)\}/g;
+  const hasBraces = braceRegex.test(text);
+  if (hasBraces) {
+    const parts = [];
+    let lastIndex = 0;
+    const regex = /\{([^}]+)\}/g;
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        const fixedText = text.slice(lastIndex, match.index).trim();
+        if (fixedText) {
+          fixedText.split(/\s+/).forEach(w => { if (w) parts.push({ word: w, type: 'fixed' }); });
+        }
+      }
+      parts.push({ word: match[1].trim(), type: 'variable' });
+      lastIndex = regex.lastIndex;
+    }
+    if (lastIndex < text.length) {
+      const fixedText = text.slice(lastIndex).trim();
+      if (fixedText) {
+        fixedText.split(/\s+/).forEach(w => { if (w) parts.push({ word: w, type: 'fixed' }); });
+      }
+    }
+    return parts;
+  }
+  return text.trim().split(/\s+/).filter(Boolean).map(w => ({ word: w, type: 'fixed' }));
+}
+
+function buildFrame(parts) {
+  return parts.map(p => p.type === 'variable' ? '___' : p.word).join(' ');
+}
+
+function buildFullText(parts) {
+  return parts.map(p => p.word).join(' ');
+}
+
+function getVariableParts(parts) {
+  return parts.filter(p => p.type === 'variable').map(p => p.word);
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function scheduleReview(chunk, rating) {
+  const now = Date.now();
+  let { interval, ease, repetitions } = chunk;
+  if (rating === 'again') { repetitions = 0; interval = 0.0035; ease = Math.max(1.3, ease - 0.2); }
+  else if (rating === 'hard') { if (repetitions === 0) interval = 1/24; else interval = Math.max(1, interval * 1.2); ease = Math.max(1.3, ease - 0.15); repetitions++; }
+  else if (rating === 'good') { if (repetitions === 0) interval = 1; else if (repetitions === 1) interval = 3; else interval = Math.round(interval * ease); repetitions++; }
+  else if (rating === 'easy') { if (repetitions === 0) interval = 4; else if (repetitions === 1) interval = 7; else interval = Math.round(interval * ease * 1.3); ease += 0.15; repetitions++; }
+  const nextReview = now + interval * DAY_MS;
+  let status = 'learning';
+  if (interval >= 30) status = 'mastered';
+  else if (interval >= 7) status = 'review';
+  else if (interval >= 1) status = 'learning';
+  return { ...chunk, interval, ease, repetitions, nextReview, lastReview: now, status };
+}
+
+function initSRS(chunk) {
+  if (!chunk.nextReview) { chunk.nextReview = Date.now(); chunk.interval = 0; chunk.ease = 2.5; chunk.repetitions = 0; chunk.status = 'new'; }
+  return chunk;
+}
+
+function getDueChunks(chunks) {
+  const now = Date.now();
+  return chunks.map(initSRS).filter(c => c.nextReview <= now).sort((a, b) => a.nextReview - b.nextReview);
+}
+
+function formatInterval(days) {
+  if (days < 1/24) return '<1h';
+  if (days < 1) return Math.round(days * 24) + 'h';
+  if (days < 30) return Math.round(days) + 'T';
+  if (days < 365) return Math.round(days / 30) + 'M';
+  return Math.round(days / 365) + 'J';
+}
+
+function previewInterval(chunk, rating) {
+  const test = scheduleReview({...chunk}, rating);
+  return formatInterval(test.interval);
+}
+
+function tokenizeText(text) {
+  const sentences = text.match(/[^.!?]+[.!?]+/g) || (text.trim() ? [text.trim() + '.'] : []);
+  const result = { sentences: [], allWords: [] };
+  let globalIdx = 0;
+  sentences.forEach((sent, sentIdx) => {
+    const tokens = [];
+    const regex = /([a-zäöüßA-ZÄÖÜ0-9'-]+)|([^\s])/g;
+    let match;
+    while ((match = regex.exec(sent)) !== null) {
+      if (match[1]) {
+        const wordObj = { type: 'word', value: match[1], sentenceIdx: sentIdx, globalIdx: globalIdx };
+        tokens.push(wordObj);
+        result.allWords.push(wordObj);
+        globalIdx++;
+      } else if (match[2]) {
+        tokens.push({ type: 'punct', value: match[2], sentenceIdx: sentIdx });
+      }
+    }
+    result.sentences.push({ text: sent.trim(), tokens, sentenceIdx: sentIdx });
+  });
+  return result;
+}
+
+function analyzeText(text, lengthFilter = 'all') {
+  const tokenized = tokenizeText(text);
+  const candidates = new Map();
+  const existingLower = new Set(chunks.map(c => c.full.toLowerCase()));
+  const stopWords = getStopWords();
+  tokenized.sentences.forEach(sentence => {
+    const words = sentence.tokens.filter(t => t.type === 'word').map(t => t.value);
+    if (words.length === 0) return;
+    const minN = lengthFilter === 'all' ? 2 : parseInt(lengthFilter);
+    const maxN = lengthFilter === 'all' ? 6 : (parseInt(lengthFilter) >= 5 ? 10 : parseInt(lengthFilter));
+    for (let n = minN; n <= Math.min(maxN, words.length); n++) {
+      for (let i = 0; i <= words.length - n; i++) {
+        const ngram = words.slice(i, i + n);
+        const firstNorm = normalizeWord(ngram[0]);
+        const lastNorm = normalizeWord(ngram[ngram.length - 1]);
+        if (stopWords.has(firstNorm) || stopWords.has(lastNorm)) continue;
+        if (ngram.some(w => /^[^a-z0-9äöüß]+$/i.test(w))) continue;
+        if (ngram.every(w => stopWords.has(normalizeWord(w)))) continue;
+        const key = ngram.join(' ').toLowerCase();
+        if (!candidates.has(key)) {
+          candidates.set(key, { words: ngram, full: ngram.join(' '), sentence: sentence.text, count: 1, length: n, originalWords: [...ngram] });
+        } else {
+          candidates.get(key).count++;
+        }
+      }
+    }
+  });
+  return Array.from(candidates.values())
+    .map(c => ({ ...c, isDuplicate: existingLower.has(c.full.toLowerCase()) }))
+    .sort((a, b) => { if (a.isDuplicate !== b.isDuplicate) return a.isDuplicate ? 1 : -1; if (b.length !== a.length) return b.length - a.length; return b.count - a.count; })
+    .slice(0, 60);
+}
+
+let importTokenized = null;
+let autoCandidates = [];
+let autoSelected = new Set();
+let manualCandidates = [];
+let selectedGlobalIdxs = new Set();
+let currentLengthFilter = 'all';
+let autoCandidateModifications = {};
+
+function renderInteractiveText() {
+  const container = document.getElementById('interactiveText');
+  if (!importTokenized) {
+    container.innerHTML = '<span class="tokens-empty">Bitte füge zuerst Text ein und klicke auf "Text analysieren".</span>';
+    return;
+  }
+  let html = '';
+  importTokenized.sentences.forEach(sentence => {
+    html += '<span class="sentence">';
+    sentence.tokens.forEach(token => {
+      if (token.type === 'word') {
+        const isSelected = selectedGlobalIdxs.has(token.globalIdx);
+        html += `<span class="iword ${isSelected ? 'selected' : ''}" data-gidx="${token.globalIdx}">${esc(token.value)}</span>`;
+      } else {
+        html += `<span class="ipunct">${esc(token.value)}</span>`;
+      }
+    });
+    html += '</span> ';
+  });
+  container.innerHTML = html;
+  container.querySelectorAll('.iword').forEach(el => {
+    el.addEventListener('click', () => {
+      const gidx = parseInt(el.dataset.gidx);
+      if (selectedGlobalIdxs.has(gidx)) selectedGlobalIdxs.delete(gidx);
+      else selectedGlobalIdxs.add(gidx);
+      renderInteractiveText();
+      renderSelectionPreview();
+    });
+  });
+}
+
+function renderSelectionPreview() {
+  const area = document.getElementById('selectionPreviewArea');
+  if (selectedGlobalIdxs.size === 0) { area.innerHTML = ''; return; }
+  const selectedWords = importTokenized.allWords.filter(w => selectedGlobalIdxs.has(w.globalIdx)).sort((a, b) => a.globalIdx - b.globalIdx);
+  const wordsHtml = selectedWords.map(w => `<span class="sel-word">${esc(w.value)}</span>`).join(' ');
+  const sourceSentIdx = selectedWords[0].sentenceIdx;
+  const sourceText = importTokenized.sentences[sourceSentIdx].text;
+  area.innerHTML = `
+    <div class="selection-preview">
+      <div class="selection-preview-label">Ausgewählt (${selectedWords.length} Wörter):</div>
+      <div class="selection-preview-text">${wordsHtml}</div>
+      <div class="selection-info">💡 Die Wörter werden in der Reihenfolge des Textes hinzugefügt.</div>
+      <div style="font-size:0.8rem;color:var(--cream);opacity:0.6;font-style:italic;padding-left:12px;border-left:2px solid var(--cherry);">📖 ${esc(sourceText)}</div>
+      <div class="selection-actions">
+        <button class="btn btn-primary" id="addSelectionBtn" style="padding:10px 20px;font-size:0.9rem;">➕ Als Brocken hinzufügen</button>
+        <button class="btn btn-secondary" id="clearSelectionBtn2" style="padding:10px 20px;font-size:0.9rem;">✕ Auswahl löschen</button>
+      </div>
+    </div>`;
+  const addBtn = document.getElementById('addSelectionBtn');
+  const clearBtn2 = document.getElementById('clearSelectionBtn2');
+  if (addBtn) addBtn.addEventListener('click', () => { addManualCandidate(selectedWords, sourceText); });
+  if (clearBtn2) clearBtn2.addEventListener('click', () => { selectedGlobalIdxs.clear(); renderInteractiveText(); renderSelectionPreview(); });
+}
+
+function addManualCandidate(selectedWords, sourceText) {
+  const words = selectedWords.map(w => w.value);
+  const full = words.join(' ');
+  const existingLower = new Set(chunks.map(c => c.full.toLowerCase()));
+  const isDuplicate = existingLower.has(full.toLowerCase());
+  const candidate = { id: generateId(), words, full, sentence: sourceText, parts: words.map(w => ({ word: w, type: 'fixed' })), isDuplicate };
+  manualCandidates.push(candidate);
+  selectedGlobalIdxs.clear();
+  renderInteractiveText();
+  renderSelectionPreview();
+  renderManualCandidatesList();
+  showToast(`🍒 "${full}" hinzugefügt`);
+}
+
+let draggedToken = null;
+let dragSourceIdx = null;
+let dragSourceWordIdx = null;
+
+function handleDragStart(e, cardIdx, wordIdx) {
+  e.preventDefault();
+  draggedToken = e.target;
+  dragSourceIdx = cardIdx;
+  dragSourceWordIdx = wordIdx;
+  draggedToken.classList.add('dragging');
+  document.addEventListener('mousemove', handleDragMove);
+  document.addEventListener('mouseup', handleDragEnd);
+  document.addEventListener('touchmove', handleDragMove, {passive: false});
+  document.addEventListener('touchend', handleDragEnd);
+}
+
+function handleDragMove(e) {
+  if (!draggedToken) return;
+  let target = e.target;
+  if (e.touches) target = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+  document.querySelectorAll('.token.drag-over').forEach(el => el.classList.remove('drag-over'));
+  if (target && target.classList.contains('token')) {
+    const parentCard = target.closest('.manual-candidate-card');
+    const sourceCard = draggedToken.closest('.manual-candidate-card');
+    if (parentCard === sourceCard && target !== draggedToken) target.classList.add('drag-over');
+  }
+}
+
+function handleDragEnd(e) {
+  if (!draggedToken) return;
+  let target = e.target;
+  if (e.changedTouches) target = document.elementFromPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+  if (target && target.classList.contains('token')) {
+    const parentCard = target.closest('.manual-candidate-card');
+    const sourceCard = draggedToken.closest('.manual-candidate-card');
+    if (parentCard === sourceCard && target !== draggedToken) {
+      const targetCardIdx = parseInt(parentCard.dataset.idx);
+      const targetWordIdx = parseInt(target.dataset.wordIdx);
+      const chunk = manualCandidates[targetCardIdx];
+      const temp = chunk.parts[dragSourceWordIdx];
+      chunk.parts[dragSourceWordIdx] = chunk.parts[targetWordIdx];
+      chunk.parts[targetWordIdx] = temp;
+      renderManualCandidatesList();
+      showToast('🔄 Wörter getauscht');
+    }
+  }
+  draggedToken.classList.remove('dragging');
+  document.querySelectorAll('.token.drag-over').forEach(el => el.classList.remove('drag-over'));
+  draggedToken = null;
+  dragSourceIdx = null;
+  dragSourceWordIdx = null;
+  document.removeEventListener('mousemove', handleDragMove);
+  document.removeEventListener('mouseup', handleDragEnd);
+  document.removeEventListener('touchmove', handleDragMove);
+  document.removeEventListener('touchend', handleDragEnd);
+}
+
+function renderManualCandidatesList() {
+  const section = document.getElementById('manualCandidatesSection');
+  const list = document.getElementById('manualCandidatesList');
+  if (manualCandidates.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  list.innerHTML = manualCandidates.map((cand, idx) => {
+    const tokensHtml = cand.parts.map((p, i) => `<span class="token ${p.type}" data-idx="${idx}" data-word-idx="${i}">${esc(p.word)}</span>`).join(' ');
+    return `<div class="manual-candidate-card" data-idx="${idx}">
+      <div class="mc-header"><div class="mc-chunk">${tokensHtml}</div><button class="mc-remove" data-idx="${idx}" title="Entfernen">✕</button></div>
+      <div class="mc-source">${esc(cand.sentence)}</div>
+      <div class="mc-meta">
+        <span class="candidate-badge length">${cand.words.length} Wörter</span>
+        ${cand.isDuplicate ? `<span class="candidate-badge dup">⚠ Bereits in der Sammlung</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.token').forEach(token => {
+    token.addEventListener('click', (e) => {
+      if (!draggedToken) {
+        const idx = parseInt(token.dataset.idx);
+        const wordIdx = parseInt(token.dataset.wordIdx);
+        const cand = manualCandidates[idx];
+        if (!cand) return;
+        cand.parts[wordIdx].type = cand.parts[wordIdx].type === 'fixed' ? 'variable' : 'fixed';
+        renderManualCandidatesList();
+      }
+    });
+    token.addEventListener('mousedown', (e) => { handleDragStart(e, parseInt(token.dataset.idx), parseInt(token.dataset.wordIdx)); });
+    token.addEventListener('touchstart', (e) => { handleDragStart(e, parseInt(token.dataset.idx), parseInt(token.dataset.wordIdx)); }, {passive: true});
+  });
+  list.querySelectorAll('.mc-remove').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); const idx = parseInt(btn.dataset.idx); manualCandidates.splice(idx, 1); renderManualCandidatesList(); });
+  });
+}
+
+function importManualCandidates() {
+  if (manualCandidates.length === 0) { showToast('⚠️ Keine Brocken ausgewählt'); return; }
+  let count = 0;
+  manualCandidates.forEach(cand => {
+    const chunk = { id: generateId(), full: buildFullText(cand.parts), frame: buildFrame(cand.parts), variables: getVariableParts(cand.parts), parts: cand.parts.map(p => ({ ...p })), examples: [cand.sentence], tags: [], folder: null, date: new Date().toISOString(), nextReview: Date.now(), interval: 0, ease: 2.5, repetitions: 0, lastReview: null, status: 'new' };
+    chunks.unshift(chunk);
+    count++;
+  });
+  saveChunks(chunks);
+  updateStats();
+  showToast(`🍒 ${count} Brocken importiert!`);
+  manualCandidates = [];
+  renderManualCandidatesList();
+}
+
+function renderAutoCandidates() {
+  const area = document.getElementById('autoCandidatesArea');
+  if (autoCandidates.length === 0) {
+    area.innerHTML = `<div class="import-empty"><div class="import-empty-icon">📝</div><h3 class="section-title" style="font-size:1.1rem;">Keine Auto-Kandidaten gefunden</h3><p style="color:var(--cream);opacity:0.7;margin-top:8px;">Versuche den manuellen Modus.</p></div>`;
+    return;
+  }
+  autoCandidates.forEach((_, idx) => { if (!autoCandidateModifications[idx]) autoCandidateModifications[idx] = { removedWords: new Set(), variableWords: new Set(), isModified: false }; });
+  const selectedCount = autoSelected.size;
+  const total = autoCandidates.length;
+  let html = `<div style="font-size:0.8rem;color:var(--kirsch-gold);margin-bottom:12px;font-weight:700;">${translations[currentLang].autoEditHint}</div>
+    <div class="import-toolbar"><div class="import-toolbar-left">
+      <button class="import-toolbar-btn" id="autoSelectAllBtn">✓ Alle auswählen</button>
+      <button class="import-toolbar-btn" id="autoSelectNewBtn">★ Nur neue</button>
+      <button class="import-toolbar-btn" id="autoDeselectAllBtn">✕ Alle abwählen</button>
+    </div><div class="import-counter"><strong>${selectedCount}</strong> / ${total} ausgewählt</div></div>
+    <div id="autoCandidatesList">`;
+  autoCandidates.forEach((cand, idx) => {
+    const isSelected = autoSelected.has(idx);
+    const mod = autoCandidateModifications[idx];
+    const isModified = mod.isModified;
+    const tokensHtml = cand.originalWords.map((w, i) => {
+      if (mod.removedWords.has(i)) return '';
+      const isVariable = mod.variableWords.has(i);
+      const removeBtn = `<span class="token-remove" data-cand-idx="${idx}" data-word-idx="${i}">✕</span>`;
+      return `<span class="token ${isVariable ? 'variable' : 'fixed'}" data-cand-idx="${idx}" data-word-idx="${i}">${esc(w)}${removeBtn}</span>`;
+    }).filter(t => t).join(' ');
+    const currentWords = cand.originalWords.filter((_, i) => !mod.removedWords.has(i));
+    html += `<div class="candidate-card ${isSelected ? 'selected' : ''} ${cand.isDuplicate ? 'duplicate' : ''} ${isModified ? 'modified' : ''}" data-idx="${idx}">
+      <input type="checkbox" class="candidate-checkbox" data-idx="${idx}" ${isSelected ? 'checked' : ''}>
+      <div class="candidate-content">
+        <div class="candidate-chunk">${tokensHtml}</div>
+        <div class="candidate-source">${esc(cand.sentence)}</div>
+        <div class="candidate-meta">
+          <span class="candidate-badge length">${currentWords.length} Wörter</span>
+          ${cand.count > 1 ? `<span class="candidate-badge">×${cand.count} im Text</span>` : ''}
+          ${cand.isDuplicate ? `<span class="candidate-badge dup">⚠ Bereits in der Sammlung</span>` : ''}
+          ${isModified ? `<span class="candidate-badge modified">✏️ Bearbeiten</span>` : ''}
+        </div>
+        <div class="candidate-actions">
+          <button class="candidate-action-btn add-modified" data-idx="${idx}">➕ Bearbeiten & Hinzufügen</button>
+          ${isModified ? `<button class="candidate-action-btn" data-reset-idx="${idx}">↩️ Zurücksetzen</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+  });
+  html += `</div><div class="btn-row" style="margin-top:20px;"><button class="btn btn-primary" id="addAutoToManualBtn" ${selectedCount === 0 ? 'disabled' : ''}>➕ ${selectedCount} zur Auswahl hinzufügen</button></div>`;
+  area.innerHTML = html;
+  area.querySelectorAll('.candidate-checkbox').forEach(cb => {
+    cb.addEventListener('change', (e) => { const idx = parseInt(e.target.dataset.idx); if (e.target.checked) autoSelected.add(idx); else autoSelected.delete(idx); renderAutoCandidates(); });
+  });
+  area.querySelectorAll('.candidate-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.classList.contains('candidate-checkbox') || e.target.classList.contains('token') || e.target.classList.contains('token-remove') || e.target.classList.contains('candidate-action-btn')) return;
+      const idx = parseInt(card.dataset.idx);
+      if (autoSelected.has(idx)) autoSelected.delete(idx); else autoSelected.add(idx);
+      renderAutoCandidates();
+    });
+  });
+  area.querySelectorAll('.candidate-chunk .token').forEach(token => {
+    token.addEventListener('click', (e) => {
+      if (e.target.classList.contains('token-remove')) return;
+      e.stopPropagation();
+      const candIdx = parseInt(token.dataset.candIdx);
+      const wordIdx = parseInt(token.dataset.wordIdx);
+      const mod = autoCandidateModifications[candIdx];
+      if (mod.variableWords.has(wordIdx)) mod.variableWords.delete(wordIdx);
+      else mod.variableWords.add(wordIdx);
+      mod.isModified = true;
+      renderAutoCandidates();
+    });
+  });
+  area.querySelectorAll('.token-remove').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); const candIdx = parseInt(btn.dataset.candIdx); const wordIdx = parseInt(btn.dataset.wordIdx); const mod = autoCandidateModifications[candIdx]; mod.removedWords.add(wordIdx); mod.isModified = true; renderAutoCandidates(); });
+  });
+  area.querySelectorAll('.add-modified').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); const idx = parseInt(btn.dataset.idx); addModifiedAutoCandidate(idx); });
+  });
+  area.querySelectorAll('[data-reset-idx]').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); const idx = parseInt(btn.dataset.resetIdx); autoCandidateModifications[idx] = { removedWords: new Set(), variableWords: new Set(), isModified: false }; renderAutoCandidates(); });
+  });
+  const selectAllBtn = document.getElementById('autoSelectAllBtn');
+  const selectNewBtn = document.getElementById('autoSelectNewBtn');
+  const deselectAllBtn = document.getElementById('autoDeselectAllBtn');
+  const addAutoBtn = document.getElementById('addAutoToManualBtn');
+  if (selectAllBtn) selectAllBtn.addEventListener('click', () => { autoCandidates.forEach((_, idx) => autoSelected.add(idx)); renderAutoCandidates(); });
+  if (selectNewBtn) selectNewBtn.addEventListener('click', () => { autoSelected.clear(); autoCandidates.forEach((c, idx) => { if (!c.isDuplicate) autoSelected.add(idx); }); renderAutoCandidates(); });
+  if (deselectAllBtn) deselectAllBtn.addEventListener('click', () => { autoSelected.clear(); renderAutoCandidates(); });
+  if (addAutoBtn) addAutoBtn.addEventListener('click', () => { addAutoSelectedToManual(); });
+}
+
+function addModifiedAutoCandidate(idx) {
+  const cand = autoCandidates[idx];
+  const mod = autoCandidateModifications[idx];
+  const currentWords = cand.originalWords.filter((_, i) => !mod.removedWords.has(i));
+  const currentFull = currentWords.join(' ');
+  const parts = currentWords.map((w, originalIdx) => ({ word: w, type: mod.variableWords.has(originalIdx) ? 'variable' : 'fixed' }));
+  const existingLower = new Set(chunks.map(c => c.full.toLowerCase()));
+  const isDuplicate = existingLower.has(currentFull.toLowerCase());
+  manualCandidates.push({ id: generateId(), words: currentWords, full: currentFull, sentence: cand.sentence, parts, isDuplicate });
+  autoCandidateModifications[idx] = { removedWords: new Set(), variableWords: new Set(), isModified: false };
+  renderAutoCandidates();
+  renderManualCandidatesList();
+  showToast(`🍒 "${currentFull}" hinzugefügt`);
+}
+
+function addAutoSelectedToManual() {
+  if (autoSelected.size === 0) return;
+  let count = 0;
+  autoSelected.forEach(idx => {
+    const cand = autoCandidates[idx];
+    if (!cand) return;
+    const mod = autoCandidateModifications[idx];
+    const currentWords = cand.originalWords.filter((_, i) => !mod.removedWords.has(i));
+    const parts = currentWords.map((w, originalIdx) => ({ word: w, type: mod.variableWords.has(originalIdx) ? 'variable' : 'fixed' }));
+    manualCandidates.push({ id: generateId(), words: currentWords, full: currentWords.join(' '), sentence: cand.sentence, parts, isDuplicate: cand.isDuplicate });
+    count++;
+  });
+  autoSelected.clear();
+  renderAutoCandidates();
+  renderManualCandidatesList();
+  showToast(`➕ ${count} zur Auswahl hinzugefügt`);
+}
+
+let chunks = loadChunks().map(migrateChunk);
+let tags = loadTags();
+let folders = loadFolders();
+let currentParts = [];
+let currentExamples = [];
+let currentSelectedTags = new Set();
+let editingId = null;
+let editSelectedTags = new Set();
+let practiceQueue = [];
+let practiceIndex = 0;
+let practiceRevealed = false;
+let selectedWord = null;
+let activeFilterTags = new Set();
+let activeFolderFilter = null;
+let selectionMode = false;
+let selectedChunkIds = new Set();
+
+let pendingVerbSuggestions = [];
+
+const $ = id => document.getElementById(id);
+const chunkInput = $('chunkInput');
+const tokensContainer = $('tokensContainer');
+const framePreview = $('framePreview');
+const frameText = $('frameText');
+const saveBtn = $('saveBtn');
+const clearBtn = $('clearBtn');
+const infinitivBtn = $('infinitivBtn');
+const collectionGrid = $('collectionGrid');
+const searchInput = $('searchInput');
+const wordCloud = $('wordCloud');
+const explorerResults = $('explorerResults');
+const explorerSearch = $('explorerSearch');
+const clearSelectionBtn = $('clearSelectionBtn');
+const editModal = $('editModal');
+const editFullInput = $('editFullInput');
+const editVarsInput = $('editVarsInput');
+const editExamplesInput = $('editExamplesInput');
+const editSaveBtn = $('editSaveBtn');
+const editCancelBtn = $('editCancelBtn');
+const toast = $('toast');
+const examplesList = $('examplesList');
+const addExampleBtn = $('addExampleBtn');
+const practiceArea = $('practiceArea');
+const practiceCount = $('practiceCount');
+const practiceCountLabel = $('practiceCountLabel');
+const importTextarea = $('importTextarea');
+const analyzeBtn = $('analyzeBtn');
+const clearImportBtn = $('clearImportBtn');
+const addTagPicker = $('addTagPicker');
+const addTagCreateForm = $('addTagCreateForm');
+const addNewTagBtn = $('addNewTagBtn');
+const editTagPicker = $('editTagPicker');
+const editTagCreateForm = $('editTagCreateForm');
+const manageTagsModal = $('manageTagsModal');
+const manageTagsList = $('manageTagsList');
+const manageTagsNewBtn = $('manageTagsNewBtn');
+const manageTagsCloseBtn = $('manageTagsCloseBtn');
+const manageTagCreateForm = $('manageTagCreateForm');
+const tagFilterBar = $('tagFilterBar');
+const verbNormalizeModal = $('verbNormalizeModal');
+const verbList = $('verbList');
+const verbApplyBtn = $('verbApplyBtn');
+const verbSkipBtn = $('verbSkipBtn');
+
+// Bulk tag modal elements
+const bulkTagModal = $('bulkTagModal');
+const bulkTagPicker = $('bulkTagPicker');
+const bulkTagCreateForm = $('bulkTagCreateForm');
+const bulkTagApplyBtn = $('bulkTagApplyBtn');
+const bulkTagCancelBtn = $('bulkTagCancelBtn');
+
+// Bulk folder modal elements
+const bulkFolderModal = $('bulkFolderModal');
+const bulkFolderPicker = $('bulkFolderPicker');
+const bulkFolderCreateForm = $('bulkFolderCreateForm');
+const bulkFolderApplyBtn = $('bulkFolderApplyBtn');
+const bulkFolderCancelBtn = $('bulkFolderCancelBtn');
+
+// Folder UI elements
+const folderList = $('folderList');
+const folderCreateForm = $('folderCreateForm');
+const newFolderBtn = $('newFolderBtn');
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    $('panel-' + tab.dataset.tab).classList.add('active');
+    if (tab.dataset.tab === 'collection') { selectionMode = false; selectedChunkIds.clear(); updateBulkActionsUI(); renderCollection(); }
+    if (tab.dataset.tab === 'practice') startPractice();
+    if (tab.dataset.tab === 'explorer') { selectionMode = false; selectedChunkIds.clear(); updateBulkActionsUI(); renderExplorer(); }
+  });
+});
+
+function toggleSelectionMode() {
+  selectionMode = !selectionMode;
+  selectedChunkIds.clear();
+  updateBulkActionsUI();
+  if(document.querySelector('[data-tab="collection"].active')) renderCollection(searchInput.value);
+  if(document.querySelector('[data-tab="explorer"].active')) renderExplorer();
+}
+
+function updateBulkActionsUI() {
+  const colBar = $('bulkActionsBar');
+  const expBar = $('explorerBulkActionsBar');
+  if (selectionMode) { colBar.style.display = 'flex'; expBar.style.display = 'flex'; }
+  else { colBar.style.display = 'none'; expBar.style.display = 'none'; }
+}
+
+function selectAllVisible() {
+  document.querySelectorAll('#collectionGrid .chunk-card').forEach(card => {
+    const id = card.dataset.id;
+    selectedChunkIds.add(id);
+    card.classList.add('selected');
+    const checkbox = card.querySelector('.select-checkbox');
+    if(checkbox) checkbox.checked = true;
+  });
+}
+
+function selectAllExplorer() {
+  document.querySelectorAll('#explorerResults .chunk-card').forEach(card => {
+    const id = card.dataset.id;
+    selectedChunkIds.add(id);
+    card.classList.add('selected');
+    const checkbox = card.querySelector('.select-checkbox');
+    if(checkbox) checkbox.checked = true;
+  });
+}
+
+function deleteSelectedChunks() {
+  if (selectedChunkIds.size === 0) return;
+  if (!confirm(translations[currentLang].confirmRemoveAll.replace('All', selectedChunkIds.size))) return;
+  chunks = chunks.filter(c => !selectedChunkIds.has(c.id));
+  saveChunks(chunks);
+  updateStats();
+  selectedChunkIds.clear();
+  selectionMode = false;
+  updateBulkActionsUI();
+  if(document.querySelector('[data-tab="collection"].active')) renderCollection(searchInput.value);
+  if(document.querySelector('[data-tab="explorer"].active')) renderExplorer();
+  showToast(translations[currentLang].toastRemoved);
+}
+
+// ==================== BULK TAG FUNCTIONS ====================
+function showBulkTagModal() {
+  if (selectedChunkIds.size === 0) { showToast('⚠️ ' + (currentLang === 'de' ? 'Keine Brocken ausgewählt' : 'No chunks selected')); return; }
+  renderBulkTagPicker();
+  bulkTagModal.classList.add('show');
+}
+
+function renderBulkTagPicker() {
+  if (tags.length === 0) {
+    bulkTagPicker.innerHTML = '<span class="tags-empty">' + (currentLang === 'de' ? 'Noch keine Tags. Erstelle einen neuen!' : 'No tags yet. Create one!') + '</span>';
+  } else {
+    bulkTagPicker.innerHTML = tags.map(tag => {
+      const textColor = getContrastColor(tag.color);
+      return `<span class="tag-chip available" data-tag-id="${tag.id}" style="border-color:${tag.color};"><span class="tag-dot" style="background:${tag.color};"></span>${esc(tag.name)}</span>`;
+    }).join('');
+    bulkTagPicker.querySelectorAll('.tag-chip').forEach(chip => {
+      chip.addEventListener('click', () => { bulkTagPicker.querySelectorAll('.tag-chip').forEach(c => c.classList.remove('selected')); chip.classList.add('selected'); });
+    });
+  }
+  const createBtn = document.createElement('button');
+  createBtn.className = 'new-tag-btn';
+  createBtn.textContent = '+ ' + (currentLang === 'de' ? 'Neuen Tag erstellen' : 'Create new tag');
+  createBtn.style.marginTop = '10px';
+  createBtn.addEventListener('click', () => {
+    if (bulkTagCreateForm.innerHTML) { bulkTagCreateForm.innerHTML = ''; return; }
+    renderTagCreateForm(bulkTagCreateForm, (tag) => {
+      renderBulkTagPicker();
+      const chips = bulkTagPicker.querySelectorAll('.tag-chip');
+      chips.forEach(c => c.classList.remove('selected'));
+      const newChip = bulkTagPicker.querySelector(`[data-tag-id="${tag.id}"]`);
+      if (newChip) newChip.classList.add('selected');
+    });
+  });
+  bulkTagPicker.parentElement.insertBefore(createBtn, bulkTagCreateForm);
+}
+
+bulkTagApplyBtn.addEventListener('click', () => {
+  const selectedChip = bulkTagPicker.querySelector('.tag-chip.selected');
+  let tagId = selectedChip ? selectedChip.dataset.tagId : null;
+  if (!tagId) { showToast('⚠️ ' + (currentLang === 'de' ? 'Bitte wähle einen Tag aus' : 'Please select a tag')); return; }
+  let count = 0;
+  selectedChunkIds.forEach(id => {
+    const chunk = chunks.find(c => c.id === id);
+    if (chunk) { if (!chunk.tags) chunk.tags = []; if (!chunk.tags.includes(tagId)) { chunk.tags.push(tagId); count++; } }
+  });
+  if (count > 0) { saveChunks(chunks); updateStats(); showToast(`🏷️ ${currentLang === 'de' ? 'Tag zu' : 'Tag added to'} ${count} ${currentLang === 'de' ? 'Brocken hinzugefügt' : 'chunks'}`); renderCollection(searchInput.value); renderExplorer(); }
+  else { showToast('ℹ️ ' + (currentLang === 'de' ? 'Alle ausgewählten Brocken haben diesen Tag bereits' : 'All selected chunks already have this tag')); }
+  bulkTagModal.classList.remove('show');
+  bulkTagCreateForm.innerHTML = '';
+});
+
+bulkTagCancelBtn.addEventListener('click', () => { bulkTagModal.classList.remove('show'); bulkTagCreateForm.innerHTML = ''; });
+bulkTagModal.addEventListener('click', (e) => { if (e.target === bulkTagModal) { bulkTagModal.classList.remove('show'); bulkTagCreateForm.innerHTML = ''; } });
+
+// ==================== BULK FOLDER FUNCTIONS ====================
+function showBulkFolderModal() {
+  if (selectedChunkIds.size === 0) { showToast('⚠️ ' + (currentLang === 'de' ? 'Keine Brocken ausgewählt' : 'No chunks selected')); return; }
+  renderBulkFolderPicker();
+  bulkFolderModal.classList.add('show');
+}
+
+function renderBulkFolderPicker() {
+  const allFolders = [{ id: null, name: currentLang === 'de' ? 'Kein Ordner' : 'No folder' }, ...folders];
+  bulkFolderPicker.innerHTML = allFolders.map(folder => {
+    const count = folder.id ? getFolderCount(folder.id) : chunks.filter(c => !c.folder).length;
+    const isSelected = activeFolderFilter === folder.id;
+    return `<span class="tag-chip available ${isSelected ? 'selected' : ''}" data-folder-id="${folder.id || ''}" style="border-color:var(--cocoa);">
+      📁 ${esc(folder.name)} <span class="count" style="background:rgba(0,0,0,0.3);padding:1px 6px;border-radius:8px;font-size:0.65rem;margin-left:4px;">${count}</span>
+    </span>`;
+  }).join('');
+  bulkFolderPicker.querySelectorAll('.tag-chip').forEach(chip => {
+    chip.addEventListener('click', () => { bulkFolderPicker.querySelectorAll('.tag-chip').forEach(c => c.classList.remove('selected')); chip.classList.add('selected'); });
+  });
+  // Create new folder button
+  const createBtn = document.createElement('button');
+  createBtn.className = 'new-folder-btn';
+  createBtn.textContent = '+ ' + (currentLang === 'de' ? 'Neuen Ordner erstellen' : 'Create new folder');
+  createBtn.style.marginTop = '10px';
+  createBtn.addEventListener('click', () => {
+    if (bulkFolderCreateForm.innerHTML) { bulkFolderCreateForm.innerHTML = ''; return; }
+    renderFolderCreateForm(bulkFolderCreateForm, (folder) => {
+      renderBulkFolderPicker();
+      const chips = bulkFolderPicker.querySelectorAll('.tag-chip');
+      chips.forEach(c => c.classList.remove('selected'));
+      const newChip = bulkFolderPicker.querySelector(`[data-folder-id="${folder.id}"]`);
+      if (newChip) newChip.classList.add('selected');
+    });
+  });
+  bulkFolderPicker.parentElement.insertBefore(createBtn, bulkFolderCreateForm);
+}
+
+bulkFolderApplyBtn.addEventListener('click', () => {
+  const selectedChip = bulkFolderPicker.querySelector('.tag-chip.selected');
+  let folderId = selectedChip ? selectedChip.dataset.folderId : null;
+  if (folderId === '') folderId = null;
+  let count = 0;
+  selectedChunkIds.forEach(id => {
+    const chunk = chunks.find(c => c.id === id);
+    if (chunk) { if (chunk.folder !== folderId) { chunk.folder = folderId; count++; } }
+  });
+  if (count > 0) { saveChunks(chunks); updateStats(); showToast(`📁 ${count} ${currentLang === 'de' ? 'Brocken verschoben' : 'chunks moved'}`); renderFolders(); renderCollection(searchInput.value); renderExplorer(); }
+  else { showToast('ℹ️ ' + (currentLang === 'de' ? 'Keine Änderungen' : 'No changes')); }
+  bulkFolderModal.classList.remove('show');
+  bulkFolderCreateForm.innerHTML = '';
+});
+
+bulkFolderCancelBtn.addEventListener('click', () => { bulkFolderModal.classList.remove('show'); bulkFolderCreateForm.innerHTML = ''; });
+bulkFolderModal.addEventListener('click', (e) => { if (e.target === bulkFolderModal) { bulkFolderModal.classList.remove('show'); bulkFolderCreateForm.innerHTML = ''; } });
+
+// ==================== FOLDER UI ====================
+
+function renderFolders() {
+  const allCount = chunks.length;
+  const uncategorizedCount = chunks.filter(c => !c.folder).length;
+  
+  let html = `
+    <span class="folder-item-h ${activeFolderFilter === null ? 'active' : ''}" data-folder-id="">
+      <span class="folder-icon">📁</span>
+      Alle
+      <span class="folder-count">${allCount}</span>
+    </span>
+    <span class="folder-item-h ${activeFolderFilter === 'uncategorized' ? 'active' : ''}" data-folder-id="uncategorized">
+      <span class="folder-icon">📂</span>
+      Ohne Ordner
+      <span class="folder-count">${uncategorizedCount}</span>
+    </span>`;
+  
+  folders.forEach(folder => {
+    const count = getFolderCount(folder.id);
+    html += `<span class="folder-item-h ${activeFolderFilter === folder.id ? 'active' : ''}" data-folder-id="${folder.id}">
+      <span class="folder-icon">📁</span>
+      ${esc(folder.name)}
+      <span class="folder-count">${count}</span>
+      <span class="folder-actions">
+        <button class="delete" onclick="event.stopPropagation(); deleteFolder('${folder.id}')" title="${currentLang === 'de' ? 'Löschen' : 'Delete'}">✕</button>
+      </span>
+    </span>`;
+  });
+  
+  // Если папок нет, показываем подсказку
+  if (folders.length === 0) {
+    html += `<span class="folder-empty">${currentLang === 'de' ? 'Keine Ordner. Erstelle deinen ersten!' : 'No folders. Create your first one!'}</span>`;
+  }
+  
+  folderList.innerHTML = html;
+  
+  folderList.querySelectorAll('.folder-item-h').forEach(item => {
+    item.addEventListener('click', (e) => {
+      // Игнорируем клик по кнопке удаления
+      if (e.target.closest('.delete')) return;
+      
+      const folderId = item.dataset.folderId;
+      if (folderId === '') activeFolderFilter = null;
+      else if (folderId === 'uncategorized') activeFolderFilter = 'uncategorized';
+      else activeFolderFilter = folderId;
+      renderFolders();
+      renderCollection(searchInput.value);
+    });
+  });
+}
+
+
+function renderFolderCreateForm(container, onCreated) {
+  container.innerHTML = `
+    <div class="folder-create-form">
+      <input type="text" class="folder-name-input" placeholder="${translations[currentLang].folderNamePlaceholder}" maxlength="40">
+      <div class="folder-form-btns">
+        <button class="folder-form-btn confirm" disabled>✓ ${currentLang === 'de' ? 'Erstellen' : 'Create'}</button>
+        <button class="folder-form-btn cancel">✕</button>
+      </div>
+    </div>`;
+  const nameInput = container.querySelector('.folder-name-input');
+  const confirmBtn = container.querySelector('.folder-form-btn.confirm');
+  const cancelBtn = container.querySelector('.folder-form-btn.cancel');
+  nameInput.addEventListener('input', () => { confirmBtn.disabled = nameInput.value.trim().length === 0; });
+  nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !confirmBtn.disabled) createAndClose(); else if (e.key === 'Escape') close(); });
+  confirmBtn.addEventListener('click', createAndClose);
+  cancelBtn.addEventListener('click', close);
+  function createAndClose() {
+    const name = nameInput.value.trim();
+    if (!name) return;
+    const folder = createFolder(name);
+    close();
+    if (onCreated) onCreated(folder);
+    showToast(`📁 "${folder.name}" ${currentLang === 'de' ? 'erstellt' : 'created'}`);
+  }
+  function close() { container.innerHTML = ''; }
+  setTimeout(() => nameInput.focus(), 50);
+}
+
+newFolderBtn.addEventListener('click', () => {
+  if (folderCreateForm.innerHTML) { folderCreateForm.innerHTML = ''; return; }
+  renderFolderCreateForm(folderCreateForm, () => { renderFolders(); renderCollection(searchInput.value); });
+});
+
+function renderTagPicker(container, createFormContainer, selectedTagsSet, onChange) {
+  if (tags.length === 0) {
+    container.innerHTML = '<span class="tags-empty">Noch keine Tags. Erstelle deinen ersten!</span>';
+  } else {
+    container.innerHTML = tags.map(tag => {
+      const isSelected = selectedTagsSet.has(tag.id);
+      const textColor = getContrastColor(tag.color);
+      return `<span class="tag-chip ${isSelected ? 'selected' : 'available'}" data-tag-id="${tag.id}" style="${isSelected ? `background:${tag.color};color:${textColor};border-color:${tag.color};` : ''}">
+        <span class="tag-dot" style="background:${tag.color};"></span>${esc(tag.name)}</span>`;
+    }).join('');
+    container.querySelectorAll('.tag-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const tagId = chip.dataset.tagId;
+        if (selectedTagsSet.has(tagId)) selectedTagsSet.delete(tagId);
+        else selectedTagsSet.add(tagId);
+        renderTagPicker(container, createFormContainer, selectedTagsSet, onChange);
+        if (onChange) onChange();
+      });
+    });
+  }
+}
+
+function renderTagCreateForm(container, onCreated) {
+  const defaultColor = getNextDefaultColor();
+  container.innerHTML = `
+    <div class="tag-create-form">
+      <input type="text" class="tag-name-input" placeholder="Tag-Name..." maxlength="30">
+      <div class="color-picker-wrapper" style="background:${defaultColor};"><input type="color" value="${defaultColor}"></div>
+      <button class="tag-form-btn confirm" disabled>✓ Erstellen</button>
+      <button class="tag-form-btn cancel"></button>
+    </div>`;
+  const nameInput = container.querySelector('.tag-name-input');
+  const colorInput = container.querySelector('input[type="color"]');
+  const colorWrapper = container.querySelector('.color-picker-wrapper');
+  const confirmBtn = container.querySelector('.tag-form-btn.confirm');
+  const cancelBtn = container.querySelector('.tag-form-btn.cancel');
+  nameInput.addEventListener('input', () => { confirmBtn.disabled = nameInput.value.trim().length === 0; });
+  nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !confirmBtn.disabled) createAndClose(); else if (e.key === 'Escape') close(); });
+  colorInput.addEventListener('input', () => { colorWrapper.style.background = colorInput.value; });
+  confirmBtn.addEventListener('click', createAndClose);
+  cancelBtn.addEventListener('click', close);
+  function createAndClose() {
+    const name = nameInput.value.trim();
+    if (!name) return;
+    const tag = createTag(name, colorInput.value);
+    close();
+    if (onCreated) onCreated(tag);
+    showToast(`️ Tag "${tag.name}" erstellt`);
+  }
+  function close() { container.innerHTML = ''; }
+  setTimeout(() => nameInput.focus(), 50);
+}
+
+function getContrastColor(hex) {
+  const c = hex.replace('#', '');
+  const r = parseInt(c.substr(0, 2), 16);
+  const g = parseInt(c.substr(2, 2), 16);
+  const b = parseInt(c.substr(4, 2), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.6 ? '#1F0E08' : '#FFF8F0';
+}
+
+function refreshAddTagPicker() {
+  renderTagPicker(addTagPicker, addTagCreateForm, currentSelectedTags, () => {});
+}
+
+addNewTagBtn.addEventListener('click', () => {
+  if (addTagCreateForm.innerHTML) { addTagCreateForm.innerHTML = ''; return; }
+  renderTagCreateForm(addTagCreateForm, (tag) => { currentSelectedTags.add(tag.id); refreshAddTagPicker(); });
+});
+
+let inputTimeout;
+chunkInput.addEventListener('input', () => {
+  clearTimeout(inputTimeout);
+  inputTimeout = setTimeout(() => {
+    const text = chunkInput.value.trim();
+    if (!text) { currentParts = []; renderTokens(); updateInfinitivButton(); return; }
+    currentParts = parseChunkText(text);
+    renderTokens();
+    updateInfinitivButton();
+  }, 200);
+});
+
+function renderTokens() {
+  if (currentParts.length === 0) {
+    tokensContainer.innerHTML = '<span class="tokens-empty">Beginne oben zu tippen…</span>';
+    framePreview.style.display = 'none';
+    saveBtn.disabled = true;
+    return;
+  }
+  tokensContainer.innerHTML = '';
+  currentParts.forEach((part, i) => {
+    const token = document.createElement('span');
+    token.className = `token ${part.type}`;
+    token.textContent = part.word;
+    token.addEventListener('click', () => { currentParts[i].type = currentParts[i].type === 'fixed' ? 'variable' : 'fixed'; renderTokens(); });
+    tokensContainer.appendChild(token);
+  });
+  const hasVariable = currentParts.some(p => p.type === 'variable');
+  if (hasVariable) {
+    framePreview.style.display = 'block';
+    frameText.innerHTML = currentParts.map(p => p.type === 'variable' ? `<span class="blank">${esc(p.word)}</span>` : `<span>${esc(p.word)}</span>`).join(' ');
+  } else {
+    framePreview.style.display = 'none';
+  }
+  saveBtn.disabled = currentParts.length === 0;
+}
+
+function updateInfinitivButton() {
+  if (currentParts.length === 0) { infinitivBtn.style.display = 'none'; return; }
+  const suggestions = detectVerbForms(currentParts);
+  infinitivBtn.style.display = suggestions.length > 0 ? 'inline-flex' : 'none';
+}
+
+function runVerbNormalization() {
+  const suggestions = detectVerbForms(currentParts);
+  if (suggestions.length === 0) { showToast(currentLang === 'de' ? 'Keine Verbformen gefunden' : 'No verb forms found'); return; }
+  showVerbNormalizeModal(suggestions, (applied) => { if (applied) { renderTokens(); updateInfinitivButton(); } });
+}
+
+function showVerbNormalizeModal(suggestions, callback) {
+  pendingVerbSuggestions = suggestions.map(s => ({ ...s, apply: true }));
+  verbList.innerHTML = pendingVerbSuggestions.map((s, i) => `
+    <div class="verb-item checked" data-idx="${i}">
+      <input type="checkbox" checked data-idx="${i}">
+      <div class="verb-content">
+        <div class="verb-arrow"><span class="verb-original">${esc(s.original)}</span><span class="verb-arrow-icon">→</span><input type="text" class="verb-suggested-input" value="${esc(s.suggested)}" data-idx="${i}"></div>
+        <div class="verb-meta"><span class="verb-type-badge">${s.type === 'irregular' ? (currentLang === 'de' ? 'Unregelmäßig' : 'Irregular') : (currentLang === 'de' ? 'Regelmäßig' : 'Regular')}</span><span class="verb-confidence">${s.confidence}%</span></div>
+      </div>
+    </div>`).join('');
+  verbList.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.dataset.idx);
+      pendingVerbSuggestions[idx].apply = e.target.checked;
+      const item = e.target.closest('.verb-item');
+      if (e.target.checked) item.classList.add('checked'); else item.classList.remove('checked');
+    });
+  });
+  verbList.querySelectorAll('.verb-suggested-input').forEach(input => {
+    input.addEventListener('input', (e) => {
+      const idx = parseInt(e.target.dataset.idx);
+      pendingVerbSuggestions[idx].suggested = e.target.value;
+    });
+  });
+  verbNormalizeModal.classList.add('show');
+  verbApplyBtn.onclick = () => {
+    pendingVerbSuggestions.forEach(s => { if (s.apply && currentParts[s.idx]) currentParts[s.idx].word = s.suggested; });
+    verbNormalizeModal.classList.remove('show');
+    if (callback) callback(true);
+  };
+  verbSkipBtn.onclick = () => { verbNormalizeModal.classList.remove('show'); if (callback) callback(false); };
+}
+
+function renderExamples() {
+  if (currentExamples.length === 0) {
+    examplesList.innerHTML = '<div class="examples-empty">Noch keine Beispiele.</div>';
+    return;
+  }
+  examplesList.innerHTML = currentExamples.map((ex, i) => `
+    <div class="example-row">
+      <input type="text" class="example-input" value="${esc(ex)}" data-idx="${i}" placeholder="Schreibe einen Satz…">
+      <button class="remove-example-btn" data-idx="${i}"></button>
+    </div>`).join('');
+  examplesList.querySelectorAll('.example-input').forEach(input => {
+    input.addEventListener('input', (e) => { currentExamples[parseInt(e.target.dataset.idx)] = e.target.value; });
+  });
+  examplesList.querySelectorAll('.remove-example-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => { currentExamples.splice(parseInt(e.target.dataset.idx), 1); renderExamples(); });
+  });
+}
+
+addExampleBtn.addEventListener('click', () => {
+  currentExamples.push('');
+  renderExamples();
+  const inputs = examplesList.querySelectorAll('.example-input');
+  inputs[inputs.length - 1].focus();
+});
+
+saveBtn.addEventListener('click', () => {
+  if (currentParts.length === 0) return;
+  const suggestions = detectVerbForms(currentParts);
+  if (suggestions.length > 0) {
+    showVerbNormalizeModal(suggestions, (applied) => { doSaveChunk(); });
+  } else {
+    doSaveChunk();
+  }
+});
+
+function doSaveChunk() {
+  const examples = currentExamples.map(e => e.trim()).filter(Boolean);
+  const chunk = {
+    id: generateId(),
+    full: buildFullText(currentParts),
+    frame: buildFrame(currentParts),
+    variables: getVariableParts(currentParts),
+    parts: currentParts.map(p => ({ ...p })),
+    examples,
+    tags: Array.from(currentSelectedTags),
+    folder: null,
+    date: new Date().toISOString(),
+    nextReview: Date.now(),
+    interval: 0,
+    ease: 2.5,
+    repetitions: 0,
+    lastReview: null,
+    status: 'new'
+  };
+  chunks.unshift(chunk);
+  saveChunks(chunks);
+  updateStats();
+  chunkInput.value = '';
+  currentParts = [];
+  currentExamples = [];
+  currentSelectedTags.clear();
+  renderTokens();
+  renderExamples();
+  refreshAddTagPicker();
+  updateInfinitivButton();
+  saveBtn.classList.add('snap');
+  setTimeout(() => saveBtn.classList.remove('snap'), 400);
+  showToast(translations[currentLang].toastSaved);
+}
+
+clearBtn.addEventListener('click', () => {
+  chunkInput.value = '';
+  currentParts = [];
+  currentExamples = [];
+  currentSelectedTags.clear();
+  renderTokens();
+  renderExamples();
+  refreshAddTagPicker();
+  updateInfinitivButton();
+});
+
+function renderTagFilterBar() {
+  if (tags.length === 0) {
+    tagFilterBar.innerHTML = '<span class="tag-filter-label">Noch keine Tags</span>';
+    return;
+  }
+  const allActive = activeFilterTags.size === 0;
+  let html = `<span class="tag-filter-label">Filter:</span>
+    <span class="tag-filter-chip ${allActive ? 'active' : ''}" data-filter="all" style="${allActive ? 'background:var(--kirsch-gold);color:var(--dark-choc);border-color:var(--kirsch-gold);' : ''}">
+      Alle <span class="count">${chunks.length}</span>
+    </span>`;
+  tags.forEach(tag => {
+    const count = getTagUsageCount(tag.id);
+    const isActive = activeFilterTags.has(tag.id);
+    const textColor = getContrastColor(tag.color);
+    html += `<span class="tag-filter-chip ${isActive ? 'active' : ''}" data-filter-tag="${tag.id}" style="${isActive ? `background:${tag.color};color:${textColor};border-color:${tag.color};` : ''}">
+      <span class="tag-dot" style="background:${tag.color};"></span>${esc(tag.name)}<span class="count">${count}</span>
+    </span>`;
+  });
+  html += `<button class="manage-tags-btn" id="manageTagsBtn">🏷️ Tags verwalten</button>`;
+  tagFilterBar.innerHTML = html;
+  tagFilterBar.querySelectorAll('.tag-filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const filterAll = chip.dataset.filter === 'all';
+      const tagId = chip.dataset.filterTag;
+      if (filterAll) activeFilterTags.clear();
+      else { if (activeFilterTags.has(tagId)) activeFilterTags.delete(tagId); else activeFilterTags.add(tagId); }
+      renderTagFilterBar();
+      renderCollection(searchInput.value);
+    });
+  });
+  const manageBtn = $('manageTagsBtn');
+  if (manageBtn) manageBtn.addEventListener('click', openManageTagsModal);
+}
+
+function renderCollection(filter = '') {
+  renderTagFilterBar();
+  const q = filter.toLowerCase();
+  let filtered = chunks;
+  if (q) filtered = filtered.filter(c => c.full.toLowerCase().includes(q) || c.frame.toLowerCase().includes(q) || (c.examples || []).some(e => e.toLowerCase().includes(q)));
+  if (activeFilterTags.size > 0) filtered = filtered.filter(c => c.tags && c.tags.some(tagId => activeFilterTags.has(tagId)));
+  if (activeFolderFilter === 'uncategorized') filtered = filtered.filter(c => !c.folder);
+  else if (activeFolderFilter) filtered = filtered.filter(c => c.folder === activeFolderFilter);
+
+  if (filtered.length === 0) {
+    collectionGrid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">🍰</div><h3>${q || activeFilterTags.size > 0 || activeFolderFilter ? 'Keine Treffer gefunden' : 'Deine Sammlung ist leer'}</h3><p>${q || activeFilterTags.size > 0 || activeFolderFilter ? 'Versuche eine andere Suche oder Filter.' : 'Füge deinen ersten Brocken hinzu!'}</p></div>`;
+    return;
+  }
+
+  collectionGrid.innerHTML = filtered.map(c => {
+    initSRS(c);
+    const chunkHtml = renderClickableChunk(c.parts, (word) => exploreWord(word));
+    const dateStr = new Date(c.date).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
+    const now = Date.now();
+    const isDue = c.nextReview <= now;
+    const nextReviewStr = c.lastReview ? 'Nächste: ' + formatRelative(c.nextReview - now) : 'Noch nicht wiederholt';
+
+    const tagsHtml = (c.tags && c.tags.length > 0) ? `<div class="card-tags">${c.tags.map(tagId => {
+      const tag = getTagById(tagId);
+      if (!tag) return '';
+      const textColor = getContrastColor(tag.color);
+      return `<span class="tag-pill" style="background:${tag.color};color:${textColor};"><span class="tag-dot" style="background:${textColor};opacity:0.5;"></span>${esc(tag.name)}<button class="remove-tag" data-chunk-id="${c.id}" data-tag-id="${tagId}" title="Tag entfernen">×</button></span>`;
+    }).join('')}</div>` : '';
+
+    const examplesHtml = (c.examples && c.examples.length > 0) ? `<div class="card-examples"><div class="card-examples-title">Beispiele</div>${c.examples.slice(0, 3).map(e => `<div class="card-example">${esc(e)}</div>`).join('')}${c.examples.length > 3 ? `<div class="card-example" style="color:var(--cream);opacity:0.6;font-size:0.8rem;">+${c.examples.length - 3} mehr</div>` : ''}</div>` : '';
+
+    const isSelected = selectedChunkIds.has(c.id);
+    const folderName = c.folder ? (folders.find(f => f.id === c.folder)?.name || '?') : null;
+    const folderBadge = folderName ? `<span style="font-size:0.65rem;opacity:0.5;margin-left:6px;">📁 ${esc(folderName)}</span>` : '';
+
+    return `<div class="chunk-card ${selectionMode ? 'select-mode' : ''} ${isSelected ? 'selected' : ''}" data-id="${c.id}" onclick="handleCardClick(event, '${c.id}')">
+      <input type="checkbox" class="select-checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleChunkSelection('${c.id}', this)">
+      <div class="card-header"><div class="card-frame">Rahmen: ${esc(c.frame)} ${folderBadge}</div><span class="srs-badge ${isDue && c.lastReview ? 'due' : c.status}">${c.status}</span></div>
+      <div class="card-chunk">${chunkHtml}</div>
+      ${tagsHtml}${examplesHtml}
+      <div class="card-meta"><span class="card-date">Hinzugefügt ${dateStr}</span><span class="card-srs-info">${nextReviewStr}</span>
+        <div class="card-actions"><button class="card-btn" onclick="event.stopPropagation(); editChunk('${c.id}')">✏️</button><button class="card-btn del" onclick="event.stopPropagation(); deleteChunk('${c.id}')">🗑️</button></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  attachWordClickHandlers(collectionGrid, (word) => exploreWord(word));
+  collectionGrid.querySelectorAll('.remove-tag').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const chunkId = btn.dataset.chunkId;
+      const tagId = btn.dataset.tagId;
+      removeTagFromChunk(chunkId, tagId);
+    });
+  });
+}
+
+function handleCardClick(e, id) {
+  if (selectionMode) toggleChunkSelection(id);
+}
+
+function toggleChunkSelection(id, checkbox) {
+  if (selectedChunkIds.has(id)) { selectedChunkIds.delete(id); if(checkbox) checkbox.checked = false; }
+  else { selectedChunkIds.add(id); if(checkbox) checkbox.checked = true; }
+  const card = document.querySelector(`.chunk-card[data-id="${id}"]`);
+  if (card) { if (selectedChunkIds.has(id)) card.classList.add('selected'); else card.classList.remove('selected'); }
+}
+
+function removeTagFromChunk(chunkId, tagId) {
+  const chunk = chunks.find(c => c.id === chunkId);
+  if (!chunk || !chunk.tags) return;
+  chunk.tags = chunk.tags.filter(id => id !== tagId);
+  saveChunks(chunks);
+  renderCollection(searchInput.value);
+  showToast('Tag entfernt');
+}
+
+function formatRelative(ms) {
+  const abs = Math.abs(ms);
+  const days = Math.round(abs / DAY_MS);
+  const hours = Math.round(abs / (60 * 60 * 1000));
+  const mins = Math.round(abs / (60 * 1000));
+  const prefix = ms < 0 ? 'vor ' : 'in ';
+  if (days >= 1) return prefix + days + 'T';
+  if (hours >= 1) return prefix + hours + 'h';
+  return prefix + mins + 'min';
+}
+
+searchInput.addEventListener('input', () => { renderCollection(searchInput.value); });
+
+window.deleteChunk = function(id) {
+  if (!confirm(translations[currentLang].confirmDelete)) return;
+  chunks = chunks.filter(c => c.id !== id);
+  saveChunks(chunks);
+  updateStats();
+  renderCollection(searchInput.value);
+  showToast(translations[currentLang].toastRemoved);
+};
+
+window.editChunk = function(id) {
+  const chunk = chunks.find(c => c.id === id);
+  if (!chunk) return;
+  editingId = id;
+  editFullInput.value = chunk.full;
+  editVarsInput.value = chunk.variables.join(', ');
+  editExamplesInput.value = (chunk.examples || []).join('\n');
+  editSelectedTags = new Set(chunk.tags || []);
+  renderEditTagPicker();
+  editModal.classList.add('show');
+};
+
+function renderEditTagPicker() {
+  renderTagPicker(editTagPicker, editTagCreateForm, editSelectedTags, () => {});
+  const existingBtn = editTagPicker.parentElement.querySelector('.new-tag-btn');
+  if (!existingBtn) {
+    const btn = document.createElement('button');
+    btn.className = 'new-tag-btn';
+    btn.textContent = '+ Neuer Tag';
+    btn.style.marginTop = '10px';
+    btn.addEventListener('click', () => {
+      if (editTagCreateForm.innerHTML) { editTagCreateForm.innerHTML = ''; return; }
+      renderTagCreateForm(editTagCreateForm, (tag) => { editSelectedTags.add(tag.id); renderEditTagPicker(); });
+    });
+    editTagPicker.parentElement.insertBefore(btn, editTagCreateForm);
+  }
+}
+
+editCancelBtn.addEventListener('click', () => { editModal.classList.remove('show'); editingId = null; editTagCreateForm.innerHTML = ''; });
+editModal.addEventListener('click', (e) => { if (e.target === editModal) { editModal.classList.remove('show'); editingId = null; editTagCreateForm.innerHTML = ''; } });
+
+editSaveBtn.addEventListener('click', () => {
+  if (!editingId) return;
+  const idx = chunks.findIndex(c => c.id === editingId);
+  if (idx === -1) return;
+  const fullText = editFullInput.value.trim();
+  const varsRaw = editVarsInput.value.trim();
+  const varList = varsRaw ? varsRaw.split(',').map(v => v.trim()).filter(Boolean) : [];
+  const examplesRaw = editExamplesInput.value.trim();
+  const examples = examplesRaw ? examplesRaw.split('\n').map(e => e.trim()).filter(Boolean) : [];
+  const words = fullText.split(/\s+/).filter(Boolean);
+  const parts = words.map(w => { const isVar = varList.some(v => v.toLowerCase() === w.toLowerCase()); return { word: w, type: isVar ? 'variable' : 'fixed' }; });
+  chunks[idx] = { ...chunks[idx], full: fullText, frame: buildFrame(parts), variables: getVariableParts(parts), parts, examples, tags: Array.from(editSelectedTags) };
+  saveChunks(chunks);
+  updateStats();
+  renderCollection(searchInput.value);
+  editModal.classList.remove('show');
+  editingId = null;
+  editTagCreateForm.innerHTML = '';
+  showToast(translations[currentLang].toastUpdated);
+});
+
+function openManageTagsModal() {
+  renderManageTagsList();
+  manageTagsModal.classList.add('show');
+}
+
+function renderManageTagsList() {
+  if (tags.length === 0) {
+    manageTagsList.innerHTML = '<div class="manage-tags-empty">Noch keine Tags. Erstelle deinen ersten!</div>';
+    return;
+  }
+  manageTagsList.innerHTML = tags.map(tag => {
+    const count = getTagUsageCount(tag.id);
+    return `<div class="manage-tag-row" data-tag-id="${tag.id}">
+      <div class="manage-tag-color" style="background:${tag.color};"></div>
+      <div class="manage-tag-name">${esc(tag.name)}</div>
+      <div class="manage-tag-count">${count} Brocken</div>
+      <div class="manage-tag-actions">
+        <button class="manage-tag-btn edit" data-tag-id="${tag.id}" title="Bearbeiten">✏️</button>
+        <button class="manage-tag-btn delete" data-tag-id="${tag.id}" title="Löschen">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+  manageTagsList.querySelectorAll('.manage-tag-btn.edit').forEach(btn => { btn.addEventListener('click', () => startEditTag(btn.dataset.tagId)); });
+  manageTagsList.querySelectorAll('.manage-tag-btn.delete').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tag = getTagById(btn.dataset.tagId);
+      if (!tag) return;
+      const count = getTagUsageCount(tag.id);
+      if (confirm(`Tag "${tag.name}" löschen?${count > 0 ? `\n\nEr wird aus ${count} Brocken entfernt.` : ''}`)) {
+        deleteTag(tag.id);
+        renderManageTagsList();
+        refreshAddTagPicker();
+        renderCollection(searchInput.value);
+        showToast(`Tag "${tag.name}" gelöscht`);
+      }
+    });
+  });
+}
+
+function startEditTag(tagId) {
+  const tag = getTagById(tagId);
+  if (!tag) return;
+  const row = manageTagsList.querySelector(`[data-tag-id="${tagId}"]`);
+  if (!row) return;
+  row.innerHTML = `<input type="text" class="tag-name-input" value="${esc(tag.name)}" style="flex:1;"><div class="color-picker-wrapper" style="background:${tag.color};"><input type="color" value="${tag.color}"></div><button class="tag-form-btn confirm">✓</button><button class="tag-form-btn cancel">✕</button>`;
+  const nameInput = row.querySelector('.tag-name-input');
+  const colorInput = row.querySelector('input[type="color"]');
+  const colorWrapper = row.querySelector('.color-picker-wrapper');
+  const confirmBtn = row.querySelector('.tag-form-btn.confirm');
+  const cancelBtn = row.querySelector('.tag-form-btn.cancel');
+  colorInput.addEventListener('input', () => { colorWrapper.style.background = colorInput.value; });
+  confirmBtn.addEventListener('click', () => {
+    const newName = nameInput.value.trim();
+    if (!newName) return;
+    updateTag(tagId, { name: newName, color: colorInput.value });
+    renderManageTagsList();
+    refreshAddTagPicker();
+    renderCollection(searchInput.value);
+    showToast(`Tag aktualisiert`);
+  });
+  cancelBtn.addEventListener('click', () => { renderManageTagsList(); });
+  nameInput.focus();
+  nameInput.select();
+}
+
+manageTagsNewBtn.addEventListener('click', () => {
+  if (manageTagCreateForm.innerHTML) { manageTagCreateForm.innerHTML = ''; return; }
+  renderTagCreateForm(manageTagCreateForm, () => { renderManageTagsList(); refreshAddTagPicker(); renderCollection(searchInput.value); });
+});
+
+manageTagsCloseBtn.addEventListener('click', () => { manageTagsModal.classList.remove('show'); manageTagCreateForm.innerHTML = ''; });
+manageTagsModal.addEventListener('click', (e) => { if (e.target === manageTagsModal) { manageTagsModal.classList.remove('show'); manageTagCreateForm.innerHTML = ''; } });
+
+function startPractice() {
+  practiceQueue = getDueChunks(chunks);
+  practiceIndex = 0;
+  practiceRevealed = false;
+  renderPractice();
+}
+
+function renderPractice() {
+  practiceCount.textContent = practiceQueue.length;
+  practiceCountLabel.textContent = translations[currentLang].pracDue;
+  if (practiceQueue.length === 0) {
+    practiceArea.innerHTML = `<div class="practice-done"><div class="practice-done-icon">🎉</div><h3>${currentLang === 'de' ? 'Alles aufgeholt!' : 'All caught up!'}</h3><p>${currentLang === 'de' ? 'Momentan sind keine Brocken zur Wiederholung fällig.' : 'No chunks due for review right now.'}</p><button class="btn btn-primary" onclick="document.querySelector('[data-tab=add]').click()">✍️ ${currentLang === 'de' ? 'Neuen Brocken hinzufügen' : 'Add New Chunk'}</button></div>`;
+    return;
+  }
+  const chunk = practiceQueue[practiceIndex];
+  const frameHtml = chunk.parts.map(p => p.type === 'variable' ? `<span class="blank">___</span>` : esc(p.word)).join(' ');
+  const examplesHtml = (chunk.examples && chunk.examples.length > 0) ? `<div class="practice-examples"><div class="practice-examples-title">${currentLang === 'de' ? '💡 Tipps aus deinen Beispielen' : '💡 Hints from your examples'}</div>${chunk.examples.slice(0, 2).map(e => `<div class="practice-example">${esc(e)}</div>`).join('')}</div>` : '';
+  if (!practiceRevealed) {
+    practiceArea.innerHTML = `<div class="practice-card"><div class="practice-frame">${frameHtml}</div><div style="color:var(--cream);opacity:0.7;font-size:0.85rem;margin-bottom:16px;">${currentLang === 'de' ? 'Versuche, die fehlenden Teile abzurufen…' : 'Try to recall the missing parts…'}</div><button class="btn btn-primary" id="revealBtn">👁️ ${currentLang === 'de' ? 'Antwort zeigen' : 'Show Answer'}</button>${examplesHtml ? `<button class="btn btn-secondary" id="hintBtn" style="margin-top:10px;">💡 ${currentLang === 'de' ? 'Tipp zeigen' : 'Show Hint'}</button><div id="hintArea"></div>` : ''}</div>`;
+    $('revealBtn').addEventListener('click', () => { practiceRevealed = true; renderPractice(); });
+    const hintBtn = $('hintBtn');
+    if (hintBtn) {
+      hintBtn.addEventListener('click', () => {
+        const area = $('hintArea');
+        if (area.innerHTML) { area.innerHTML = ''; hintBtn.textContent = '💡 ' + (currentLang === 'de' ? 'Tipp zeigen' : 'Show Hint'); }
+        else { area.innerHTML = examplesHtml; hintBtn.textContent = '🙈 ' + (currentLang === 'de' ? 'Tipp verstecken' : 'Hide Hint'); }
+      });
+    }
+  } else {
+    const answerHtml = renderClickableChunk(chunk.parts, (word) => exploreWord(word));
+    practiceArea.innerHTML = `<div class="practice-card"><div class="practice-frame">${frameHtml}</div><div class="practice-answer">${answerHtml}</div>${examplesHtml}</div><div class="practice-controls">
+      <button class="practice-btn again" data-rating="again">${currentLang === 'de' ? 'Nochmal' : 'Again'}<span class="interval-hint">${previewInterval(chunk, 'again')}</span></button>
+      <button class="practice-btn hard" data-rating="hard">${currentLang === 'de' ? 'Schwer' : 'Hard'}<span class="interval-hint">${previewInterval(chunk, 'hard')}</span></button>
+      <button class="practice-btn good" data-rating="good">${currentLang === 'de' ? 'Gut' : 'Good'}<span class="interval-hint">${previewInterval(chunk, 'good')}</span></button>
+      <button class="practice-btn easy" data-rating="easy">${currentLang === 'de' ? 'Leicht' : 'Easy'}<span class="interval-hint">${previewInterval(chunk, 'easy')}</span></button>
+    </div>`;
+    attachWordClickHandlers(practiceArea, (word) => exploreWord(word));
+    practiceArea.querySelectorAll('.practice-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const rating = btn.dataset.rating;
+        const idx = chunks.findIndex(c => c.id === chunk.id);
+        if (idx !== -1) { chunks[idx] = scheduleReview(chunks[idx], rating); saveChunks(chunks); updateStats(); }
+        practiceIndex++;
+        practiceRevealed = false;
+        renderPractice();
+      });
+    });
+  }
+}
+
+function renderExplorer() {
+  const filterText = explorerSearch.value.trim().toLowerCase();
+  const stopWords = getStopWords();
+  const wordMap = {};
+  chunks.forEach(c => {
+    const words = new Set(c.full.toLowerCase().split(/\s+/).filter(Boolean));
+    words.forEach(w => {
+      const clean = w.replace(/[^a-z0-9äöüß'-]/g, '').toLowerCase();
+      if (clean.length < 3) return;
+      const normalized = normalizeWord(clean);
+      if (stopWords.has(normalized)) return;
+      if (filterText && !normalized.includes(filterText)) return;
+      if (!wordMap[normalized]) wordMap[normalized] = { count: 0, chunks: [], forms: new Set() };
+      wordMap[normalized].count++;
+      wordMap[normalized].chunks.push(c);
+      wordMap[normalized].forms.add(clean);
+    });
+  });
+  const sortedWords = Object.entries(wordMap).sort((a, b) => b[1].count - a[1].count);
+  if (sortedWords.length === 0) {
+    wordCloud.innerHTML = '<span class="tokens-empty">Keine Wörter gefunden. Füge zuerst einige Brocken hinzu!</span>';
+    explorerResults.innerHTML = '';
+    return;
+  }
+  wordCloud.innerHTML = sortedWords.slice(0, 100).map(([word, data]) => {
+    const formsArray = Array.from(data.forms).filter(f => f !== word).slice(0, 4);
+    const formsHtml = formsArray.length > 0 ? `<span class="word-forms">${formsArray.join(', ')}</span>` : '';
+    return `<span class="word-chip ${selectedWord === word ? 'active' : ''}" data-word="${esc(word)}">${esc(word)}<span class="word-count">${data.count}</span>${formsHtml}</span>`;
+  }).join('');
+  wordCloud.querySelectorAll('.word-chip').forEach(chip => {
+    chip.addEventListener('click', () => { const word = chip.dataset.word; selectedWord = selectedWord === word ? null : word; renderExplorer(); });
+  });
+  if (selectedWord && wordMap[selectedWord]) {
+    const data = wordMap[selectedWord];
+    const formsArray = Array.from(data.forms).filter(f => f !== selectedWord);
+    const formsHint = formsArray.length > 0 ? `<span class="forms-hint">(auch: ${formsArray.join(', ')})</span>` : '';
+    explorerResults.innerHTML = `<div class="explorer-title"><span class="word-badge">${esc(selectedWord)}</span> kommt in ${data.count} Brocken vor:${formsHint}</div><div class="collection-grid">${data.chunks.map(c => {
+      const chunkHtml = renderClickableChunk(c.parts, (word) => { selectedWord = word; renderExplorer(); });
+      const examplesHtml = (c.examples && c.examples.length > 0) ? c.examples.slice(0, 2).map(e => {
+        const formsPattern = Array.from(data.forms).map(f => f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+        const highlighted = esc(e).replace(new RegExp('\\b(' + formsPattern + ')\\b', 'gi'), match => `<span class="highlight">${match}</span>`);
+        return `<div class="explorer-example">${highlighted}</div>`;
+      }).join('') : '';
+      const isSelected = selectedChunkIds.has(c.id);
+      return `<div class="chunk-card ${selectionMode ? 'select-mode' : ''} ${isSelected ? 'selected' : ''}" data-id="${c.id}" onclick="handleCardClick(event, '${c.id}')">
+        <input type="checkbox" class="select-checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleChunkSelection('${c.id}', this)">
+        <div class="card-frame">Rahmen: ${esc(c.frame)}</div>
+        <div class="card-chunk">${chunkHtml}</div>${examplesHtml}
+      </div>`;
+    }).join('')}</div>`;
+    attachWordClickHandlers(explorerResults, (word) => { selectedWord = word; renderExplorer(); });
+  } else {
+    explorerResults.innerHTML = selectedWord ? '<div class="empty-state"><p>Keine Brocken enthalten dieses Wort.</p></div>' : '';
+  }
+}
+
+explorerSearch.addEventListener('input', () => { renderExplorer(); });
+clearSelectionBtn.addEventListener('click', () => { selectedWord = null; explorerSearch.value = ''; renderExplorer(); });
+
+window.exploreWord = function(word) {
+  selectedWord = word;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('[data-tab="explorer"]').classList.add('active');
+  $('panel-explorer').classList.add('active');
+  explorerSearch.value = '';
+  renderExplorer();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+function renderClickableChunk(parts, onWordClick) {
+  return parts.map(p => {
+    const clean = p.word.replace(/[^a-z0-9äöüß'-]/gi, '').toLowerCase();
+    const normalized = normalizeWord(clean);
+    const isStopWord = clean.length < 3 || getStopWords().has(normalized);
+    if (p.type === 'variable') return `<span class="var-part clickable-word" data-word="${esc(normalized)}">${esc(p.word)}</span>`;
+    else if (!isStopWord) return `<span class="clickable-word" data-word="${esc(normalized)}">${esc(p.word)}</span>`;
+    else return `<span>${esc(p.word)}</span>`;
+  }).join(' ');
+}
+
+function attachWordClickHandlers(container, onWordClick) {
+  container.querySelectorAll('.clickable-word').forEach(el => {
+    el.addEventListener('click', (e) => { e.stopPropagation(); const word = el.dataset.word; if (word && onWordClick) onWordClick(word); });
+  });
+}
+
+analyzeBtn.addEventListener('click', () => {
+  const text = importTextarea.value.trim();
+  if (!text) { showToast('⚠️ Bitte füge zuerst Text ein'); return; }
+  importTokenized = tokenizeText(text);
+  autoCandidates = analyzeText(text, currentLengthFilter);
+  autoSelected.clear();
+  autoCandidateModifications = {};
+  autoCandidates.forEach((c, idx) => { if (!c.isDuplicate) autoSelected.add(idx); });
+  manualCandidates = [];
+  selectedGlobalIdxs.clear();
+  document.getElementById('importWorkspace').style.display = 'block';
+  document.getElementById('lengthFilterRow').style.opacity = '0.5';
+  renderInteractiveText();
+  renderSelectionPreview();
+  renderAutoCandidates();
+  renderManualCandidatesList();
+  showToast(`🔍 Text analysiert — ${importTokenized.allWords.length} Wörter gefunden`);
+});
+
+clearImportBtn.addEventListener('click', () => {
+  importTextarea.value = '';
+  importTokenized = null;
+  autoCandidates = [];
+  autoSelected.clear();
+  autoCandidateModifications = {};
+  manualCandidates = [];
+  selectedGlobalIdxs.clear();
+  document.getElementById('importWorkspace').style.display = 'none';
+  document.getElementById('lengthFilterRow').style.opacity = '1';
+});
+
+document.querySelectorAll('.import-mode-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.import-mode-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.import-mode-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    const mode = tab.dataset.mode;
+    document.getElementById(mode === 'manual' ? 'manualModePanel' : 'autoModePanel').classList.add('active');
+  });
+});
+
+document.getElementById('importManualBtn').addEventListener('click', importManualCandidates);
+document.getElementById('clearManualBtn').addEventListener('click', () => {
+  if (manualCandidates.length === 0) return;
+  if (!confirm(`Alle ${manualCandidates.length} ausgewählten Brocken entfernen?`)) return;
+  manualCandidates = [];
+  renderManualCandidatesList();
+});
+
+document.querySelectorAll('.length-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.length-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    currentLengthFilter = chip.dataset.length;
+    if (importTextarea.value.trim() && importTokenized) {
+      autoCandidates = analyzeText(importTextarea.value.trim(), currentLengthFilter);
+      autoSelected.clear();
+      autoCandidateModifications = {};
+      autoCandidates.forEach((c, idx) => { if (!c.isDuplicate) autoSelected.add(idx); });
+      renderAutoCandidates();
+    }
+  });
+});
+
+function updateStats() {
+  $('statChunks').textContent = chunks.length;
+  const frames = new Set(chunks.map(c => c.frame));
+  $('statFrames').textContent = frames.size;
+  const allWords = new Set();
+  const stopWords = getStopWords();
+  chunks.forEach(c => {
+    c.full.toLowerCase().split(/\s+/).forEach(w => {
+      const clean = w.replace(/[^a-z0-9äöüß'-]/gi, '');
+      const normalized = normalizeWord(clean);
+      if (normalized.length >= 3 && !stopWords.has(normalized)) allWords.add(normalized);
+    });
+  });
+  $('statWords').textContent = allWords.size;
+  $('statTags').textContent = tags.length;
+  const due = getDueChunks(chunks).length;
+  $('statDue').textContent = due;
+  const practiceTab = document.querySelector('[data-tab="practice"]');
+  if (due > 0) { practiceTab.classList.add('has-due'); practiceTab.dataset.due = due; }
+  else { practiceTab.classList.remove('has-due'); delete practiceTab.dataset.due; }
+}
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+function esc(str) {
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+updateStats();
+renderTokens();
+renderExamples();
+refreshAddTagPicker();
+renderFolders();
+
+if (chunks.length === 0) {
+  const demo = currentLang === 'de' ? [
+    { full: 'die Ergebnisse in Betracht ziehen', vars: ['die Ergebnisse'], examples: ['Wir müssen die Ergebnisse in Betracht ziehen, bevor wir eine Entscheidung treffen.', 'Sie hat seine Gefühle in Betracht gezogen, als sie das Event plante.'] },
+    { full: 'eine Pause von der Arbeit machen', vars: ['eine Pause', 'der Arbeit'], examples: ['Du solltest jede Stunde eine Pause von der Arbeit machen.', 'Ich habe eine kurze Pause von der Arbeit gemacht, um Kaffee zu holen.'] },
+    { full: 'eine schnelle Entscheidung treffen', vars: ['eine schnelle Entscheidung'], examples: ['Wir müssen eine schnelle Entscheidung treffen, sonst verpassen wir die Frist.', 'Er hat eine schnelle Entscheidung getroffen.'] },
+    { full: 'sich Mühe geben', vars: [], examples: ['Bitte gib dir Mühe, deine Aussprache zu verbessern.', 'Sie gibt sich immer viel Mühe.'] },
+    { full: 'zu einem Schluss kommen', vars: ['einem Schluss'], examples: ['Nach stundenlanger Diskussion sind wir endlich zu einem Schluss gekommen.', 'Es ist zu früh, um zu einem Schluss zu kommen.'] },
+  ] : [
+    { full: 'take the results into account', vars: ['the results'], examples: ['We need to take the results into account before making a decision.', 'She took his feelings into account when planning the event.'] },
+    { full: 'take a break from work', vars: ['a break', 'work'], examples: ['You should take a break from work every hour.', 'I took a short break from work to grab coffee.'] },
+    { full: 'make a decision quickly', vars: ['a decision', 'quickly'], examples: ['We have to make a decision quickly or we will miss the deadline.'] },
+  ];
+  demo.forEach(d => {
+    const words = d.full.split(/\s+/);
+    const parts = words.map(w => ({ word: w, type: d.vars.some(v => v.split(' ').includes(w)) ? 'variable' : 'fixed' }));
+    chunks.push({ id: generateId(), full: d.full, frame: buildFrame(parts), variables: getVariableParts(parts), parts, examples: d.examples, tags: [], folder: null, date: new Date(Date.now() - Math.random() * 86400000 * 30).toISOString(), nextReview: Date.now() - Math.random() * 86400000, interval: Math.floor(Math.random() * 10), ease: 2.5, repetitions: Math.floor(Math.random() * 4), lastReview: Date.now() - Math.random() * 86400000 * 5, status: 'review' });
+  });
+  saveChunks(chunks);
+  updateStats();
+}
+
+// Init Lang
+setLang('de');
+</script>
+</body>
+</html>
