@@ -2652,10 +2652,11 @@
 
 <header class="header">
   <div class="lang-toggle-container">
-    <span class="lang-label active" id="labelDE" onclick="setLang('de')">DE</span>
-    <div class="toggle-switch" id="langSwitch" onclick="toggleLang()"></div>
-    <span class="lang-label" id="labelEN" onclick="setLang('en')">EN</span>
-  </div>
+  <span class="lang-label active" id="labelDE" onclick="setLang('de')">DE</span>
+  <span class="lang-label" id="labelEN" onclick="setLang('en')">EN</span>
+  <span class="lang-label" id="labelES" onclick="setLang('es')">ES</span>
+  <span class="lang-label" id="labelFR" onclick="setLang('fr')">FR</span>
+</div>
 
   <div class="logo">Kirschholiker <span>🍒</span></div>
   <div class="tagline" data-i18n="tagline">Deine Kirschsammlung — ein Stück nach dem anderen</div>
@@ -3504,47 +3505,444 @@ const translations = {
 
     // Manage tags
     manageTagsItemBrocken: "chunks"
+  },
+ es: {
+
+tagline: "Tu colección de chunks, pieza a pieza",
+    statChunks: "Chunks", statFrames: "Marcos", statWords: "Palabras", statTags: "Etiquetas", statDue: "Para hoy",
+    tabAdd: "Añadir", tabImport: "Importar", tabCollection: "Colección", tabPractice: "Practicar", tabExplorer: "Explorador",
+    addTitle: "Crea un nuevo chunk", addDesc: "Escribe un chunk y haz clic en las palabras para marcar las partes variables. Añade ejemplos y etiquetas.",
+    hintQuick: "Modo rápido:", hintQuickDesc: "Encierra las partes variables entre llaves →",
+    tokensLabel: "Haz clic en las palabras para alternar variable/fijo", tokensEmpty: "Empieza a escribir arriba…",
+    frameLabel: "Marco del chunk", exTitle: "Ejemplos de la vida real", exAdd: "Añadir ejemplo", exEmpty: "Aún no hay ejemplos.",
+    tagNew: "Nueva etiqueta", tagEmpty: "Aún no hay etiquetas. ¡Crea la primera!", btnSave: "Guardar chunk", btnClear: "Borrar",
+    btnInfinitiv: "Infinitivo",
+    impTitle: "Importación masiva desde texto", impDesc: "Pega un párrafo y elige chunks — manual o automáticamente.",
+    impLenLabel: "Longitud del chunk (solo auto):", lenAll: "Todas", lenWords: "palabras", btnAnalyze: "Analizar texto",
+    modeManual: "Selección manual", modeAuto: "Candidatos automáticos",
+    manualHint: "💡 Haz clic en las palabras para seleccionarlas. También puedes elegir palabras no consecutivas.",
+    selTitle: "Tus chunks seleccionados", dragHint: "💡 Arrastra las palabras dentro de un chunk para reordenarlas.",
+    btnImportAll: "Importar todo", btnRemoveAll: "Quitar todo",
+    colTitle: "Mi caja de chocolates", colDesc: "Todos tus chunks guardados. 💡 Haz clic en cualquier palabra para explorarla.",
+    pracTitle: "Sesión de práctica", pracDesc: "Repetición espaciada — repasa los chunks justo cuando estás a punto de olvidarlos.",
+    pracDue: "chunks para hoy", expTitle: "Explorador de palabras", expDesc: "Haz clic en una palabra para ver todos los chunks donde aparece.",
+    btnClearSel: "Limpiar selección", editTitle: "✏️ Editar chunk", editFull: "Texto completo del chunk:", editVars: "Partes variables (separadas por comas):",
+    editEx: "Ejemplos (uno por línea):", btnSaveChanges: "Guardar cambios", btnCancel: "Cancelar",
+    manageTagsTitle: "🏷️ Gestionar etiquetas", manageTagsDesc: "Renombrar, recolorear o eliminar etiquetas.", btnClose: "Cerrar",
+    searchPlaceholder: "Buscar chunks…", filterPlaceholder: "Filtrar palabras…",
+    toastSaved: "🍫 ¡Chunk guardado!", toastRemoved: "Chunk eliminado 🗑️", toastUpdated: "Chunk actualizado ✏️",
+    noMatches: "No se encontraron resultados", emptyBox: "Tu caja está vacía", emptyStart: "¡Añade tu primer chunk para empezar!",
+    confirmDelete: "¿Eliminar este chunk?", confirmRemoveAll: "¿Eliminar todos los chunks seleccionados?",
+    selectAll: "Seleccionar todo", deleteSelected: "Eliminar", cancel: "Cancelar",
+    selectModeBtn: "☑️ Seleccionar",
+    verbModalTitle: "Detectar formas verbales",
+    verbModalDesc: "Encontramos formas verbales en tu chunk. Elige cuáles convertir al infinitivo:",
+    btnApply: "Aplicar", btnSkip: "Omitir",
+    demoPlaceholder: "p.ej. El avión despega",
+    importPlaceholder: "Pega tu texto aquí...",
+    examplePlaceholder: "Escribe una frase…",
+    autoEditHint: "💡 Pasa el ratón por una palabra para borrarla (✕). Haz clic para alternar variable/fijo.",
+    addModified: "➕ Editar y añadir",
+    resetCard: "↩️ Restablecer",
+    bulkAddTag: "Añadir etiqueta",
+    bulkTagDesc: "Elige una etiqueta existente o crea una nueva.",
+    bulkMoveFolder: "Mover a carpeta",
+    bulkFolderDesc: "Elige una carpeta para los chunks seleccionados.",
+    foldersTitle: "Carpetas",
+    folderNew: "Nueva",
+    folderAll: "Todas",
+    folderUncategorized: "Sin carpeta",
+    folderDeleteConfirm: "¿Eliminar esta carpeta? Los chunks dentro no se eliminarán.",
+    folderNamePlaceholder: "Nombre de la carpeta…",
+
+    tagLabel: "Etiquetas:",
+    tagPickerEmpty: "Aún no hay etiquetas. ¡Crea la primera!",
+    tagCreatePlaceholder: "Nombre de la etiqueta...",
+    tagCreateBtn: "Crear",
+    tagCreatedToast: "creada",
+    tagDeletedToast: "eliminada",
+    tagUpdatedToast: "Etiqueta actualizada",
+    tagRemoveToast: "Etiqueta eliminada",
+    tagManageBtn: "🏷️ Gestionar etiquetas",
+    tagAddToSelected: "Añadir etiqueta a los chunks seleccionados",
+    bulkTagEmpty: "Aún no hay etiquetas. ¡Crea una nueva!",
+    bulkTagCreateNew: "Crear nueva etiqueta",
+    bulkTagSelectWarn: "Por favor elige una etiqueta",
+    bulkTagAllHave: "Todos los chunks seleccionados ya tienen esta etiqueta",
+    bulkTagAddedPrefix: "🏷️ Etiqueta añadida a",
+    bulkTagAddedSuffix: "chunks",
+    tagDeleteConfirmPrefix: "Etiqueta",
+    tagDeleteConfirmSuffix: "¿eliminar?",
+    tagDeleteFromChunks: "Se eliminará de",
+    tagDeleteBrocken: "chunks.",
+    tagNewBtn: "+ Nueva etiqueta",
+    tagManageTitle: "🏷️ Gestionar etiquetas",
+    tagManageDesc: "Renombrar, recolorear o eliminar etiquetas.",
+    tagManageNew: "Crear nueva etiqueta",
+
+    folderKein: "Sin carpeta",
+    folderDeleteBtn: "Eliminar",
+    folderCreatedPrefix: "📁",
+    folderCreatedSuffix: "creada",
+    folderDeleteToast: "📁 Carpeta eliminada",
+    folderCreateNew: "Crear nueva carpeta",
+    folderCreateBtn: "Crear",
+    folderMovePrefix: "📁",
+    folderMoveSuffix: "chunks movidos",
+    folderNoChanges: "Sin cambios",
+    folderNoFolders: "Aún no hay carpetas. ¡Crea la primera!",
+
+    chunkSelectHint: "Seleccionado",
+    wordsSuffix: "palabras",
+    addAsChunkBtn: "➕ Añadir como chunk",
+    clearSelectionBtn: "✕ Limpiar selección",
+    wordsOrderHint: "💡 Las palabras se añadirán en el orden del texto.",
+    importAnalyzeFirst: "Primero pega un texto y haz clic en \"Analizar texto\".",
+    importNoText: "⚠️ Primero pega algún texto",
+    importAnalyzedPrefix: "🔍 Texto analizado —",
+    importAnalyzedSuffix: "palabras encontradas",
+    importNoChunksSelected: "⚠️ Ningún chunk seleccionado",
+    importChunksImportedPrefix: "🍒",
+    importChunksImportedSuffix: "chunks importados!",
+    importConfirmRemoveAll: "Quitar todos los",
+    importConfirmRemoveAllSuffix: "chunks seleccionados?",
+
+    autoSelectAll: "✓ Seleccionar todo",
+    autoSelectNew: "★ Solo nuevos",
+    autoDeselectAll: "✕ Deseleccionar todo",
+    autoSelectedCounter: "seleccionados",
+    autoAddToSelection: "añadir a la selección",
+    autoNoCandidates: "No se encontraron candidatos automáticos",
+    autoTryManual: "Prueba el modo manual.",
+    autoDeleteWord: "Eliminar",
+    autoResetCard: "↩️ Restablecer",
+    autoEditAndAdd: "➕ Editar y añadir",
+    autoAlreadyInCollection: "⚠ Ya en la colección",
+    autoInText: "×",
+    autoInTextSuffix: "en el texto",
+    autoModified: "✏️ Editar",
+
+    cardFrame: "Marco:",
+    cardAddedPrefix: "Añadido",
+    cardNext: "Siguiente:",
+    cardNotReviewed: "Aún no repasado",
+    cardExamples: "Ejemplos",
+    cardMoreSuffix: "más",
+    cardTagRemove: "Eliminar etiqueta",
+    cardFilterAll: "Todas",
+    cardFilter: "Filtro:",
+
+    explorerComesIn1: "aparece en",
+    explorerComesIn2: "chunks:",
+    explorerAlso: "(también:",
+    explorerNoChunksWithWord: "Ningún chunk contiene esta palabra.",
+    explorerNoWords: "No se encontraron palabras. ¡Añade algunos chunks primero!",
+
+    practiceAllCaughtUp: "¡Todo al día!",
+    practiceNoDue: "No hay chunks para repasar ahora mismo.",
+    practiceAddNew: "✍️ Añadir nuevo chunk",
+    practiceTryRecall: "Intenta recordar las partes que faltan…",
+    practiceShowAnswer: "👁️ Mostrar respuesta",
+    practiceShowHint: "💡 Mostrar pista",
+    practiceHideHint: "🙈 Ocultar pista",
+    practiceHintsTitle: "💡 Pistas de tus ejemplos",
+    practiceAgain: "Otra vez",
+    practiceHard: "Difícil",
+    practiceGood: "Bien",
+    practiceEasy: "Fácil",
+
+    verbIrregular: "Irregular",
+    verbRegular: "Regular",
+    verbNoneFound: "No se encontraron formas verbales",
+
+    tagUntranslated: "Etiqueta",
+    folderUntranslated: "Carpeta",
+    noChunksSelected: "Ningún chunk seleccionado",
+    tryAnotherFilter: "Prueba otra búsqueda o filtro.",
+
+    btnExportJson: "Exportar",
+    btnImportJson: "Importar",
+    btnExportSelected: "Exportar",
+    importJsonLabel: "Elegir archivo JSON:",
+    importPreviewTitle: "Vista previa:",
+    importMergeLabel: "Fusionar (mantener chunks existentes)",
+    importModalTitle: "📥 Importar",
+    importModalDesc: "Elige un archivo JSON para importar.",
+    exportModalTitle: "📤 Exportar",
+    exportModalDesc: "Tu colección se descargará como archivo JSON.",
+    exportSelectedTitle: "📤 Exportar",
+    exportSelectedDesc: "Los chunks seleccionados se descargarán como archivo JSON.",
+    exportFolderTitle: "📤 Exportar",
+    exportFolderDesc: "Los chunks de esta carpeta se descargarán como archivo JSON.",
+    exportAllTitle: "📤 Exportar",
+    exportAllDesc: "Todos los chunks se descargarán como archivo JSON.",
+    exportConfirmBtn: "📥 Descargar",
+    importConfirmBtn: "📤 Importar",
+    exportEmpty: "⚠️ No hay chunks para exportar",
+    importEmpty: "⚠️ No se encontraron chunks válidos en el archivo",
+    importSuccessPrefix: "✅",
+    importSuccessSuffix: "chunks importados",
+    importError: "⚠️ Error al leer el archivo JSON",
+    importPreviewFound: "Chunks encontrados:",
+    importPreviewTags: "Etiquetas:",
+    importPreviewFolders: "Carpetas:",
+    exportDone: "✅ Exportación completada",
+    exportFilePrefix: "chunkoholic_export_",
+    importFileInvalid: "⚠️ Formato de archivo inválido. Elige un archivo JSON de Chunkoholic.",
+
+    manageTagsItemBrocken: "chunks"
+  },
+fr: {
+    tagline: "Ta collection de chunks, morceau par morceau",
+    statChunks: "Chunks", statFrames: "Cadres", statWords: "Mots", statTags: "Étiquettes", statDue: "À réviser",
+    tabAdd: "Ajouter", tabImport: "Importer", tabCollection: "Collection", tabPractice: "Réviser", tabExplorer: "Explorateur",
+    addTitle: "Crée un nouveau chunk", addDesc: "Saisis un chunk et clique sur les mots pour marquer les parties variables. Ajoute des exemples et des étiquettes.",
+    hintQuick: "Mode rapide :", hintQuickDesc: "Entoure les parties variables d'accolades →",
+    tokensLabel: "Clique sur les mots pour basculer variable/fixe", tokensEmpty: "Commence à taper ci-dessus…",
+    frameLabel: "Cadre du chunk", exTitle: "Exemples de la vie réelle", exAdd: "Ajouter un exemple", exEmpty: "Aucun exemple pour l'instant.",
+    tagNew: "Nouvelle étiquette", tagEmpty: "Aucune étiquette. Crée la première !", btnSave: "Enregistrer le chunk", btnClear: "Effacer",
+    btnInfinitiv: "Infinitif",
+    impTitle: "Import en masse depuis un texte", impDesc: "Colle un paragraphe et choisis des chunks — manuellement ou automatiquement.",
+    impLenLabel: "Longueur du chunk (auto seulement) :", lenAll: "Toutes", lenWords: "mots", btnAnalyze: "Analyser le texte",
+    modeManual: "Sélection manuelle", modeAuto: "Candidats automatiques",
+    manualHint: "💡 Clique sur les mots pour les sélectionner. Tu peux aussi choisir des mots non consécutifs.",
+    selTitle: "Tes chunks sélectionnés", dragHint: "💡 Fais glisser les mots dans un chunk pour les réorganiser.",
+    btnImportAll: "Tout importer", btnRemoveAll: "Tout retirer",
+    colTitle: "Ma boîte de chocolats", colDesc: "Tous tes chunks enregistrés. 💡 Clique sur n'importe quel mot pour l'explorer.",
+    pracTitle: "Session de révision", pracDesc: "Répétition espacée — révise les chunks juste avant de les oublier.",
+    pracDue: "chunks à réviser aujourd'hui", expTitle: "Explorateur de mots", expDesc: "Clique sur un mot pour voir tous les chunks où il apparaît.",
+    btnClearSel: "Effacer la sélection", editTitle: "✏️ Modifier le chunk", editFull: "Texte complet du chunk :", editVars: "Parties variables (séparées par des virgules) :",
+    editEx: "Exemples (un par ligne) :", btnSaveChanges: "Enregistrer les modifications", btnCancel: "Annuler",
+    manageTagsTitle: "🏷️ Gérer les étiquettes", manageTagsDesc: "Renommer, recolorer ou supprimer des étiquettes.", btnClose: "Fermer",
+    searchPlaceholder: "Rechercher des chunks…", filterPlaceholder: "Filtrer les mots…",
+    toastSaved: "🍫 Chunk enregistré !", toastRemoved: "Chunk supprimé 🗑️", toastUpdated: "Chunk mis à jour ✏️",
+    noMatches: "Aucun résultat", emptyBox: "Ta boîte est vide", emptyStart: "Ajoute ton premier chunk pour commencer !",
+    confirmDelete: "Supprimer ce chunk ?", confirmRemoveAll: "Supprimer tous les chunks sélectionnés ?",
+    selectAll: "Tout sélectionner", deleteSelected: "Supprimer", cancel: "Annuler",
+    selectModeBtn: "☑️ Sélectionner",
+    verbModalTitle: "Détecter les formes verbales",
+    verbModalDesc: "Nous avons trouvé des formes verbales dans ton chunk. Choisis celles à convertir à l'infinitif :",
+    btnApply: "Appliquer", btnSkip: "Ignorer",
+    demoPlaceholder: "p. ex. L'avion décolle",
+    importPlaceholder: "Colle ton texte ici...",
+    examplePlaceholder: "Écris une phrase…",
+    autoEditHint: "💡 Survole un mot pour le supprimer (✕). Clique pour basculer variable/fixe.",
+    addModified: "➕ Modifier et ajouter",
+    resetCard: "↩️ Réinitialiser",
+    bulkAddTag: "Ajouter une étiquette",
+    bulkTagDesc: "Choisis une étiquette existante ou crées-en une nouvelle.",
+    bulkMoveFolder: "Déplacer vers un dossier",
+    bulkFolderDesc: "Choisis un dossier pour les chunks sélectionnés.",
+    foldersTitle: "Dossiers",
+    folderNew: "Nouveau",
+    folderAll: "Tous",
+    folderUncategorized: "Sans dossier",
+    folderDeleteConfirm: "Supprimer ce dossier ? Les chunks à l'intérieur ne seront pas supprimés.",
+    folderNamePlaceholder: "Nom du dossier…",
+
+    tagLabel: "Étiquettes :",
+    tagPickerEmpty: "Aucune étiquette. Crée la première !",
+    tagCreatePlaceholder: "Nom de l'étiquette...",
+    tagCreateBtn: "Créer",
+    tagCreatedToast: "créée",
+    tagDeletedToast: "supprimée",
+    tagUpdatedToast: "Étiquette mise à jour",
+    tagRemoveToast: "Étiquette retirée",
+    tagManageBtn: "🏷️ Gérer les étiquettes",
+    tagAddToSelected: "Ajouter une étiquette aux chunks sélectionnés",
+    bulkTagEmpty: "Aucune étiquette. Crée-en une nouvelle !",
+    bulkTagCreateNew: "Créer une nouvelle étiquette",
+    bulkTagSelectWarn: "Veuillez choisir une étiquette",
+    bulkTagAllHave: "Tous les chunks sélectionnés ont déjà cette étiquette",
+    bulkTagAddedPrefix: "🏷️ Étiquette ajoutée à",
+    bulkTagAddedSuffix: "chunks",
+    tagDeleteConfirmPrefix: "Étiquette",
+    tagDeleteConfirmSuffix: "supprimer ?",
+    tagDeleteFromChunks: "Elle sera retirée de",
+    tagDeleteBrocken: "chunks.",
+    tagNewBtn: "+ Nouvelle étiquette",
+    tagManageTitle: "🏷️ Gérer les étiquettes",
+    tagManageDesc: "Renommer, recolorer ou supprimer des étiquettes.",
+    tagManageNew: "Créer une nouvelle étiquette",
+
+    folderKein: "Sans dossier",
+    folderDeleteBtn: "Supprimer",
+    folderCreatedPrefix: "📁",
+    folderCreatedSuffix: "créé",
+    folderDeleteToast: "📁 Dossier supprimé",
+    folderCreateNew: "Créer un nouveau dossier",
+    folderCreateBtn: "Créer",
+    folderMovePrefix: "📁",
+    folderMoveSuffix: "chunks déplacés",
+    folderNoChanges: "Aucun changement",
+    folderNoFolders: "Aucun dossier. Crée le premier !",
+
+    chunkSelectHint: "Sélectionné",
+    wordsSuffix: "mots",
+    addAsChunkBtn: "➕ Ajouter comme chunk",
+    clearSelectionBtn: "✕ Effacer la sélection",
+    wordsOrderHint: "💡 Les mots seront ajoutés dans l'ordre du texte.",
+    importAnalyzeFirst: "Colle d'abord un texte et clique sur « Analyser le texte ».",
+    importNoText: "⚠️ Colle d'abord un peu de texte",
+    importAnalyzedPrefix: "🔍 Texte analysé —",
+    importAnalyzedSuffix: "mots trouvés",
+    importNoChunksSelected: "⚠️ Aucun chunk sélectionné",
+    importChunksImportedPrefix: "🍒",
+    importChunksImportedSuffix: "chunks importés !",
+    importConfirmRemoveAll: "Retirer les",
+    importConfirmRemoveAllSuffix: "chunks sélectionnés ?",
+
+    autoSelectAll: "✓ Tout sélectionner",
+    autoSelectNew: "★ Seulement nouveaux",
+    autoDeselectAll: "✕ Tout désélectionner",
+    autoSelectedCounter: "sélectionnés",
+    autoAddToSelection: "ajouter à la sélection",
+    autoNoCandidates: "Aucun candidat automatique trouvé",
+    autoTryManual: "Essaie le mode manuel.",
+    autoDeleteWord: "Supprimer",
+    autoResetCard: "↩️ Réinitialiser",
+    autoEditAndAdd: "➕ Modifier et ajouter",
+    autoAlreadyInCollection: "⚠ Déjà dans la collection",
+    autoInText: "×",
+    autoInTextSuffix: "dans le texte",
+    autoModified: "✏️ Modifier",
+
+    cardFrame: "Cadre :",
+    cardAddedPrefix: "Ajouté",
+    cardNext: "Prochain :",
+    cardNotReviewed: "Pas encore révisé",
+    cardExamples: "Exemples",
+    cardMoreSuffix: "de plus",
+    cardTagRemove: "Retirer l'étiquette",
+    cardFilterAll: "Toutes",
+    cardFilter: "Filtre :",
+
+    explorerComesIn1: "apparaît dans",
+    explorerComesIn2: "chunks :",
+    explorerAlso: "(aussi :",
+    explorerNoChunksWithWord: "Aucun chunk ne contient ce mot.",
+    explorerNoWords: "Aucun mot trouvé. Ajoute d'abord quelques chunks !",
+
+    practiceAllCaughtUp: "Tout est à jour !",
+    practiceNoDue: "Aucun chunk à réviser pour l'instant.",
+    practiceAddNew: "✍️ Ajouter un nouveau chunk",
+    practiceTryRecall: "Essaie de te rappeler les parties manquantes…",
+    practiceShowAnswer: "👁️ Afficher la réponse",
+    practiceShowHint: "💡 Afficher l'indice",
+    practiceHideHint: "🙈 Masquer l'indice",
+    practiceHintsTitle: "💡 Indices de tes exemples",
+    practiceAgain: "Encore",
+    practiceHard: "Difficile",
+    practiceGood: "Bien",
+    practiceEasy: "Facile",
+
+    verbIrregular: "Irrégulier",
+    verbRegular: "Régulier",
+    verbNoneFound: "Aucune forme verbale trouvée",
+
+    tagUntranslated: "Étiquette",
+    folderUntranslated: "Dossier",
+    noChunksSelected: "Aucun chunk sélectionné",
+    tryAnotherFilter: "Essaie une autre recherche ou un autre filtre.",
+
+    btnExportJson: "Exporter",
+    btnImportJson: "Importer",
+    btnExportSelected: "Exporter",
+    importJsonLabel: "Choisir un fichier JSON :",
+    importPreviewTitle: "Aperçu :",
+    importMergeLabel: "Fusionner (garder les chunks existants)",
+    importModalTitle: "📥 Importer",
+    importModalDesc: "Choisis un fichier JSON à importer.",
+    exportModalTitle: "📤 Exporter",
+    exportModalDesc: "Ta collection sera téléchargée en fichier JSON.",
+    exportSelectedTitle: "📤 Exporter",
+    exportSelectedDesc: "Les chunks sélectionnés seront téléchargés en fichier JSON.",
+    exportFolderTitle: "📤 Exporter",
+    exportFolderDesc: "Les chunks de ce dossier seront téléchargés en fichier JSON.",
+    exportAllTitle: "📤 Exporter",
+    exportAllDesc: "Tous les chunks seront téléchargés en fichier JSON.",
+    exportConfirmBtn: "📥 Télécharger",
+    importConfirmBtn: "📤 Importer",
+    exportEmpty: "⚠️ Aucun chunk à exporter",
+    importEmpty: "⚠️ Aucun chunk valide trouvé dans le fichier",
+    importSuccessPrefix: "✅",
+    importSuccessSuffix: "chunks importés",
+    importError: "⚠️ Erreur lors de la lecture du fichier JSON",
+    importPreviewFound: "Chunks trouvés :",
+    importPreviewTags: "Étiquettes :",
+    importPreviewFolders: "Dossiers :",
+    exportDone: "✅ Export terminé",
+    exportFilePrefix: "chunkoholic_export_",
+    importFileInvalid: "⚠️ Format de fichier invalide. Choisis un fichier JSON Chunkoholic.",
+
+    manageTagsItemBrocken: "chunks"
   }
 };
 
+
+//добавление новых языков(выше)
+
+
+
+
+//замена
+
 let currentLang = 'de';
+const LANG_CYCLE = ['de', 'en', 'es', 'fr'];
 
 function setLang(lang) {
+  if (!translations[lang]) return; // защита от опечаток
   currentLang = lang;
   document.documentElement.lang = lang;
+
+  // Метки активного языка
+  const labels = { de: 'labelDE', en: 'labelEN', es: 'labelES', fr: 'labelFR' };
+  Object.keys(labels).forEach(code => {
+    const el = document.getElementById(labels[code]);
+    if (el) {
+      if (code === lang) el.classList.add('active');
+      else el.classList.remove('active');
+    }
+  });
+
+  // Старый .toggle-switch — если остался в HTML, скрываем/не трогаем
   const switchEl = document.getElementById('langSwitch');
-  const labelDE = document.getElementById('labelDE');
-  const labelEN = document.getElementById('labelEN');
-  if (lang === 'en') {
-    switchEl.classList.add('en');
-    labelEN.classList.add('active');
-    labelDE.classList.remove('active');
-  } else {
-    switchEl.classList.remove('en');
-    labelDE.classList.add('active');
-    labelEN.classList.remove('active');
+  if (switchEl) {
+    if (lang === 'en') switchEl.classList.add('en');
+    else switchEl.classList.remove('en');
   }
+
+  // data-i18n
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.dataset.i18n;
     if (translations[lang][key]) {
       el.textContent = translations[lang][key];
     }
   });
+
+  // Плейсхолдеры
   $('chunkInput').placeholder = translations[lang].demoPlaceholder;
   $('importTextarea').placeholder = translations[lang].importPlaceholder;
   $('searchInput').placeholder = translations[lang].searchPlaceholder;
   $('explorerSearch').placeholder = translations[lang].filterPlaceholder;
-  renderExamples(); 
+
+  // Перерисовка всего, где есть тексты из translations
+  renderExamples();
   renderFolders();
   renderCollection(searchInput.value);
   updateInfinitivButton();
+  refreshAddTagPicker();
+  renderTagFilterBar();
   if (document.querySelector('[data-tab="explorer"]').classList.contains('active')) renderExplorer();
   if (document.querySelector('[data-tab="practice"]').classList.contains('active')) renderPractice();
 }
 
 function toggleLang() {
-  setLang(currentLang === 'de' ? 'en' : 'de');
+  const idx = LANG_CYCLE.indexOf(currentLang);
+  const next = LANG_CYCLE[(idx + 1) % LANG_CYCLE.length];
+  setLang(next);
 }
+
 
 // ==================== DATA LAYER ====================
 const STORAGE_KEY = 'kirschholiker_brocken_v1';
