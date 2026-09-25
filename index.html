@@ -931,16 +931,27 @@
     flex-wrap: wrap;
   }
 
-  .search-bar {
+    .search-bar {
     position: relative;
     margin-bottom: 16px;
     display: flex;
     gap: 10px;
+    flex-wrap: wrap;
+    align-items: stretch;
   }
 
   .search-input-wrapper {
     position: relative;
-    flex: 1;
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .search-bar .btn {
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+    padding: 12px 12px;
+    font-size: 0.85rem;
   }
 
   .search-input {
@@ -2604,10 +2615,36 @@
     .collection-grid { grid-template-columns: 1fr 1fr; }
   }
 
+    @media (max-width: 520px) {
+    .search-bar {
+      gap: 8px;
+    }
+    .search-input-wrapper {
+      flex: 1 1 100%;
+    }
+    .search-bar .btn {
+      flex: 1 1 calc(50% - 4px);
+      padding: 10px 8px;
+      font-size: 0.8rem;
+      letter-spacing: 0.5px;
+      min-width: 0;
+    }
+    .search-bar .btn .btn-label-short {
+      display: inline;
+    }
+    .search-bar .btn .btn-label-full {
+      display: none;
+    }
+  }
+
   @media (max-width: 400px) {
     .logo { font-size: 2rem; }
     .tab { font-size: 0.65rem; padding: 10px 4px; min-width: 60px; }
     .practice-frame { font-size: 1.2rem; }
+    .search-bar .btn {
+      font-size: 0.75rem;
+      padding: 10px 6px;
+    }
   }
 </style>
 </head>
