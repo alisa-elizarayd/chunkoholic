@@ -4262,13 +4262,25 @@ function localSave(key, value) {
 }
 
 function getCloudRows(table) {
-  const source = table === 'chunks' ? chunks : table === 'tags' ? tags : folders;
-  const userId = supabaseUser?.id;
-  if (!userId) return [];
+  let source;
 
-  return source.map(item => ({
+  if (table === 'chunks') {
+    source = chunks;
+  } else if (table === 'tags') {
+    source = tags;
+  } else if (table === 'folders') {
+    source = folders;
+  } else {
+    return [];
+  }
+
+  const cloudSource = table === 'chunks'
+    ? source.filter(item => !item.isDemo)
+    : source;
+
+  return cloudSource.map(item => ({
     id: item.id,
-    user_id: userId,
+    user_id: supabaseUser.id,
     data: item,
     updated_at: new Date().toISOString()
   }));
@@ -4682,7 +4694,12 @@ function migrateChunk(c) {
 }
 
 function saveChunks(chunks) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(chunks));
+  // Normal user save: demo chunks become real user data.
+  const userChunks = chunks.map(c =>
+    c.isDemo ? { ...c, isDemo: false } : c
+  );
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(userChunks));
   scheduleCloudSync();
 }
 
@@ -6647,9 +6664,12 @@ if (chunks.length === 0) {
   demo.forEach(d => {
     const words = d.full.split(/\s+/);
     const parts = words.map(w => ({ word: w, type: d.vars.some(v => v.split(' ').includes(w)) ? 'variable' : 'fixed' }));
-    chunks.push({ id: generateId(), full: d.full, frame: buildFrame(parts), variables: getVariableParts(parts), parts, examples: d.examples, tags: [], folder: null, date: new Date(Date.now() - Math.random() * 86400000 * 30).toISOString(), nextReview: Date.now() - Math.random() * 86400000, interval: Math.floor(Math.random() * 10), ease: 2.5, repetitions: Math.floor(Math.random() * 4), lastReview: Date.now() - Math.random() * 86400000 * 5, status: 'review' });
+    chunks.push({ id: generateId(), full: d.full, frame: buildFrame(parts), variables: getVariableParts(parts), parts, examples: d.examples, tags: [], folder: null, date: new Date(Date.now() - Math.random() * 86400000 * 30).toISOString(), nextReview: Date.now() - Math.random() * 86400000, interval: Math.floor(Math.random() * 10), ease: 2.5, repetitions: Math.floor(Math.random() * 4), lastReview: Date.now() - Math.random() * 86400000 * 5, status: 'review', isDemo: true });
   });
-  saveChunks(chunks);
+  // Demo data is onboarding-only: keep it local and do not queue it for Cloud sync.
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(chunks));
+  clearCloudSyncPending();
+  clearCloudDeletions();
   updateStats();
 }
 
