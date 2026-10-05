@@ -4152,13 +4152,56 @@ const SUPABASE_URL = 'https://anpjsztzavzawqizchul.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zuk8Ed2AIjy2G9vZid3ZBQ_OKPklKVe';
 
 const supabaseClient = window.supabase
-  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storage: window.localStorage
+      }
+    })
   : null;
+
+const CLOUD_PENDING_KEY = 'chunkoholic_cloud_sync_pending_v1';
+const CLOUD_DELETIONS_KEY = 'chunkoholic_cloud_deletions_v1';
 
 let supabaseUser = null;
 let cloudReady = false;
 let cloudSyncTimer = null;
 let cloudSyncInFlight = null;
+let authInitPromise = null;
+
+function hasPendingCloudChanges() {
+  return localStorage.getItem(CLOUD_PENDING_KEY) === '1';
+}
+
+function markCloudSyncPending() {
+  localStorage.setItem(CLOUD_PENDING_KEY, '1');
+}
+
+function clearCloudSyncPending() {
+  localStorage.removeItem(CLOUD_PENDING_KEY);
+}
+
+function getCloudDeletions() {
+  try {
+    return JSON.parse(localStorage.getItem(CLOUD_DELETIONS_KEY)) || [];
+  } catch {
+    return [];
+  }
+}
+
+function rememberCloudDeletion(table, id) {
+  const deletions = getCloudDeletions();
+  if (!deletions.some(d => d.table === table && d.id === id)) {
+    deletions.push({ table, id });
+    localStorage.setItem(CLOUD_DELETIONS_KEY, JSON.stringify(deletions));
+  }
+}
+
+function clearCloudDeletions() {
+  localStorage.removeItem(CLOUD_DELETIONS_KEY);
+}
 
 function setAuthMessage(message, type = '') {
   const el = document.getElementById('authMessage');
@@ -4288,7 +4331,21 @@ async function syncNow() {
 
   cloudSyncInFlight = (async () => {
     try {
+      // Apply explicit local deletions first, then upsert the current local state.
+      const deletions = getCloudDeletions();
+      for (const deletion of deletions) {
+        const { error } = await supabaseClient
+          .from(deletion.table)
+          .delete()
+          .eq('user_id', supabaseUser.id)
+          .eq('id', deletion.id);
+        if (error) throw error;
+      }
+
       await uploadLocalDataToCloud();
+
+      clearCloudDeletions();
+      clearCloudSyncPending();
       return true;
     } catch (error) {
       console.error('Supabase background sync failed:', error);
@@ -4303,6 +4360,9 @@ async function syncNow() {
 }
 
 function scheduleCloudSync() {
+  // Remember the change even if authentication is still initializing.
+  markCloudSyncPending();
+
   if (!supabaseUser || !cloudReady) return;
 
   clearTimeout(cloudSyncTimer);
@@ -4322,18 +4382,43 @@ async function downloadTableFromCloud(table) {
   return (data || []).map(row => row.data);
 }
 
+function mergeById(localItems, cloudItems, deletedIds = new Set()) {
+  const merged = new Map();
+
+  // Cloud data provides the remote baseline.
+  for (const item of cloudItems || []) {
+    if (item?.id && !deletedIds.has(item.id)) merged.set(item.id, item);
+  }
+
+  // Local data wins for IDs that exist locally. This is important after a
+  // refresh: a just-created/edited local item must not be overwritten by
+  // an older cloud snapshot while auth is being restored.
+  for (const item of localItems || []) {
+    if (item?.id && !deletedIds.has(item.id)) merged.set(item.id, item);
+  }
+
+  return Array.from(merged.values());
+}
+
 async function loadCloudData() {
   if (!supabaseClient || !supabaseUser) {
     return { ok: false, mode: 'not-connected' };
   }
 
   try {
-    // First read the cloud. If the account already has data, cloud wins.
     const [cloudChunks, cloudTags, cloudFolders] = await Promise.all([
       downloadTableFromCloud('chunks'),
       downloadTableFromCloud('tags'),
       downloadTableFromCloud('folders')
     ]);
+
+    const pending = hasPendingCloudChanges();
+    const deletions = getCloudDeletions();
+    const deletedByTable = {
+      chunks: new Set(deletions.filter(d => d.table === 'chunks').map(d => d.id)),
+      tags: new Set(deletions.filter(d => d.table === 'tags').map(d => d.id)),
+      folders: new Set(deletions.filter(d => d.table === 'folders').map(d => d.id))
+    };
 
     const hasCloudData =
       cloudChunks.length > 0 ||
@@ -4345,7 +4430,31 @@ async function loadCloudData() {
       tags.length > 0 ||
       folders.length > 0;
 
+    if (pending) {
+      // We have local changes that happened before/while auth was restored.
+      // Merge instead of blindly replacing localStorage with cloud data.
+      chunks = mergeById(chunks, cloudChunks.map(migrateChunk), deletedByTable.chunks).map(migrateChunk);
+      tags = mergeById(tags, cloudTags, deletedByTable.tags);
+      folders = mergeById(folders, cloudFolders, deletedByTable.folders);
+
+      localSave(STORAGE_KEY, chunks);
+      localSave(TAGS_KEY, tags);
+      localSave(FOLDERS_KEY, folders);
+
+      updateStats();
+      renderFolders();
+      refreshAddTagPicker();
+      renderTagFilterBar();
+      renderCollection(searchInput.value);
+      if (document.querySelector('[data-tab="explorer"].active')) renderExplorer();
+      if (document.querySelector('[data-tab="practice"].active')) renderPractice();
+
+      return { ok: true, mode: hasCloudData ? 'merge' : 'upload' };
+    }
+
     if (hasCloudData) {
+      // No pending local changes: this is a normal login on another device,
+      // so the cloud snapshot becomes the local snapshot.
       chunks = cloudChunks.map(migrateChunk);
       tags = cloudTags;
       folders = cloudFolders;
@@ -4365,9 +4474,8 @@ async function loadCloudData() {
       return { ok: true, mode: 'download' };
     }
 
-    // First login to an empty account: preserve local data and upload it.
     if (hasLocalData) {
-      await uploadLocalDataToCloud();
+      // First login to an empty account: preserve local data and upload it.
       return { ok: true, mode: 'upload' };
     }
 
@@ -4388,7 +4496,13 @@ async function finishCloudLogin() {
   if (result.ok) {
     cloudReady = true;
     updateAuthUI();
-    setAuthMessage('☁️ Synced successfully.', 'ok');
+
+    // Flush changes that may have happened before auth/session restoration.
+    const synced = await syncNow();
+
+    if (synced) {
+      setAuthMessage('☁️ Synced successfully.', 'ok');
+    }
   } else {
     // Keep the account signed in, but DO NOT claim that sync succeeded.
     cloudReady = false;
@@ -4407,6 +4521,30 @@ async function initSupabaseAuth() {
 
   updateAuthUI();
 
+  // Register the listener BEFORE getSession so we cannot miss a SIGNED_IN
+  // event while the initial session is being restored.
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    supabaseUser = session?.user || null;
+    updateAuthUI();
+
+    if (event === 'SIGNED_IN' && supabaseUser) {
+      // Do not await Supabase calls directly inside the auth callback.
+      queueMicrotask(() => {
+        authInitPromise = finishCloudLogin();
+      });
+    }
+
+    if (event === 'SIGNED_OUT') {
+      cloudReady = false;
+      clearTimeout(cloudSyncTimer);
+      cloudSyncInFlight = null;
+      clearCloudSyncPending();
+      clearCloudDeletions();
+      setAuthMessage('');
+      updateAuthUI();
+    }
+  });
+
   const { data, error } = await supabaseClient.auth.getSession();
   if (error) {
     console.error('getSession failed:', error);
@@ -4416,25 +4554,10 @@ async function initSupabaseAuth() {
 
   if (data?.session?.user) {
     supabaseUser = data.session.user;
-    await finishCloudLogin();
-  }
-
-  supabaseClient.auth.onAuthStateChange(async (event, session) => {
-    supabaseUser = session?.user || null;
     updateAuthUI();
-
-    if (event === 'SIGNED_IN' && supabaseUser) {
-      await finishCloudLogin();
-    }
-
-    if (event === 'SIGNED_OUT') {
-      cloudReady = false;
-      clearTimeout(cloudSyncTimer);
-      cloudSyncInFlight = null;
-      setAuthMessage('');
-      updateAuthUI();
-    }
-  });
+    authInitPromise = finishCloudLogin();
+    await authInitPromise;
+  }
 }
 
 async function signInWithEmail() {
@@ -4606,6 +4729,7 @@ function createTag(name, color) {
 }
 
 function deleteTag(tagId) {
+  rememberCloudDeletion('tags', tagId);
   tags = tags.filter(t => t.id !== tagId);
   chunks.forEach(c => { if (c.tags && c.tags.includes(tagId)) c.tags = c.tags.filter(id => id !== tagId); });
   saveTags(tags);
@@ -4638,6 +4762,7 @@ function createFolder(name) {
 
 function deleteFolder(folderId) {
   if (!confirm(translations[currentLang].folderDeleteConfirm)) return;
+  rememberCloudDeletion('folders', folderId);
   folders = folders.filter(f => f.id !== folderId);
   chunks.forEach(c => { if (c.folder === folderId) c.folder = null; });
   saveFolders(folders);
@@ -6133,6 +6258,7 @@ searchInput.addEventListener('input', () => { renderCollection(searchInput.value
 
 window.deleteChunk = function(id) {
   if (!confirm(translations[currentLang].confirmDelete)) return;
+  rememberCloudDeletion('chunks', id);
   chunks = chunks.filter(c => c.id !== id);
   saveChunks(chunks);
   updateStats();
