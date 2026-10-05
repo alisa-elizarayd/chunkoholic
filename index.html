@@ -4256,7 +4256,8 @@ async function syncTableToCloud(table) {
     }
   } catch (error) {
     console.error(`Supabase sync failed for ${table}:`, error);
-  }
+  setAuthMessage(`Cloud sync error: ${error.message}`, 'error');
+}
 }
 
 function scheduleCloudSync() {
