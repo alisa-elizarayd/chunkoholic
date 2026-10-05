@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chunkoholic-v8';
+const CACHE_NAME = 'chunkoholic-v9';
 
 const APP_FILES = [
   './',
@@ -33,6 +33,31 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  const isNavigation = event.request.mode === 'navigate' ||
+    event.request.destination === 'document';
+
+  // HTML/navigation: network-first so new GitHub Pages deployments are
+  // picked up immediately. If offline, fall back to the cached app shell.
+  if (isNavigation) {
+    event.respondWith(
+      fetch(event.request)
+        .then(networkResponse => {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseToCache);
+          });
+          return networkResponse;
+        })
+        .catch(() =>
+          caches.match(event.request).then(cachedResponse =>
+            cachedResponse || caches.match('./index.html')
+          )
+        )
+    );
+    return;
+  }
+
+  // Other same-origin app resources stay cache-first for fast offline use.
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
       if (cachedResponse) {
@@ -45,7 +70,6 @@ self.addEventListener('fetch', event => {
           event.request.url.startsWith(self.location.origin)
         ) {
           const responseToCache = networkResponse.clone();
-
           caches.open(CACHE_NAME).then(cache => {
             cache.put(event.request, responseToCache);
           });
@@ -53,12 +77,6 @@ self.addEventListener('fetch', event => {
 
         return networkResponse;
       });
-    }).catch(() => {
-      if (event.request.mode === 'navigate') {
-        return caches.match('./index.html');
-      }
-
-      return Response.error();
-    })
+    }).catch(() => Response.error())
   );
 });
