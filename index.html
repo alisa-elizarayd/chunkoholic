@@ -4158,12 +4158,20 @@ const supabaseClient = window.supabase
 let supabaseUser = null;
 let cloudReady = false;
 let cloudSyncTimer = null;
+let cloudSyncInFlight = null;
 
 function setAuthMessage(message, type = '') {
   const el = document.getElementById('authMessage');
   if (!el) return;
   el.textContent = message || '';
   el.className = `auth-message ${type}`.trim();
+}
+
+function setAuthBusy(busy) {
+  const signIn = document.getElementById('authSignInBtn');
+  const signUp = document.getElementById('authSignUpBtn');
+  if (signIn) signIn.disabled = busy;
+  if (signUp) signUp.disabled = busy;
 }
 
 function updateAuthUI() {
@@ -4176,7 +4184,7 @@ function updateAuthUI() {
   if (!status || !openBtn) return;
 
   if (supabaseUser) {
-    status.textContent = `☁️ ${supabaseUser.email || 'Synced'}`;
+    status.textContent = `☁️ ${supabaseUser.email || 'Account'}`;
     openBtn.textContent = '☁️ Account';
     if (signIn) signIn.style.display = 'none';
     if (signUp) signUp.style.display = 'none';
@@ -4214,6 +4222,7 @@ function getCloudRows(table) {
   const source = table === 'chunks' ? chunks : table === 'tags' ? tags : folders;
   const userId = supabaseUser?.id;
   if (!userId) return [];
+
   return source.map(item => ({
     id: item.id,
     user_id: userId,
@@ -4223,57 +4232,83 @@ function getCloudRows(table) {
 }
 
 async function syncTableToCloud(table) {
-  if (!supabaseClient || !supabaseUser ) return;
+  if (!supabaseClient || !supabaseUser) return false;
 
-  try {
-    const rows = getCloudRows(table);
-    const { data: existing, error: readError } = await supabaseClient
+  const rows = getCloudRows(table);
+
+  const { data: existing, error: readError } = await supabaseClient
+    .from(table)
+    .select('id')
+    .eq('user_id', supabaseUser.id);
+
+  if (readError) throw readError;
+
+  const localIds = new Set(rows.map(row => row.id));
+  const staleIds = (existing || [])
+    .map(row => row.id)
+    .filter(id => !localIds.has(id));
+
+  if (staleIds.length) {
+    const { error } = await supabaseClient
       .from(table)
-      .select('id')
-      .eq('user_id', supabaseUser.id);
+      .delete()
+      .eq('user_id', supabaseUser.id)
+      .in('id', staleIds);
 
-    if (readError) throw readError;
+    if (error) throw error;
+  }
 
-    const localIds = new Set(rows.map(r => r.id));
-    const staleIds = (existing || []).map(r => r.id).filter(id => !localIds.has(id));
+  for (let i = 0; i < rows.length; i += 200) {
+    const batch = rows.slice(i, i + 200);
+    if (!batch.length) continue;
 
-    if (staleIds.length) {
-      const { error } = await supabaseClient
-        .from(table)
-        .delete()
-        .eq('user_id', supabaseUser.id)
-        .in('id', staleIds);
-      if (error) throw error;
-    }
+    // IMPORTANT: the database primary key is (user_id, id),
+    // so Supabase/PostgREST must use BOTH columns for the conflict target.
+    const { error } = await supabaseClient
+      .from(table)
+      .upsert(batch, { onConflict: 'user_id,id' });
 
-    for (let i = 0; i < rows.length; i += 200) {
-      const batch = rows.slice(i, i + 200);
-      if (!batch.length) continue;
-      const { error } = await supabaseClient
-        .from(table)
-        .upsert(batch, { onConflict: 'id' });
-      if (error) throw error;
-    }
-  } catch (error) {
-    console.error(`Supabase sync failed for ${table}:`, error);
-  setAuthMessage(`Cloud sync error: ${error.message}`, 'error');
-}
-}
+    if (error) throw error;
+  }
 
-function scheduleCloudSync() {
-  if (!supabaseUser || !cloudReady) return;
-  clearTimeout(cloudSyncTimer);
-  cloudSyncTimer = setTimeout(() => {
-    syncTableToCloud('chunks');
-    syncTableToCloud('tags');
-    syncTableToCloud('folders');
-  }, 350);
+  return true;
 }
 
 async function uploadLocalDataToCloud() {
   await syncTableToCloud('chunks');
   await syncTableToCloud('tags');
   await syncTableToCloud('folders');
+  return true;
+}
+
+async function syncNow() {
+  if (!supabaseClient || !supabaseUser || !cloudReady) return false;
+
+  if (cloudSyncInFlight) return cloudSyncInFlight;
+
+  cloudSyncInFlight = (async () => {
+    try {
+      await uploadLocalDataToCloud();
+      return true;
+    } catch (error) {
+      console.error('Supabase background sync failed:', error);
+      setAuthMessage(`Cloud sync error: ${error.message}`, 'error');
+      return false;
+    } finally {
+      cloudSyncInFlight = null;
+    }
+  })();
+
+  return cloudSyncInFlight;
+}
+
+function scheduleCloudSync() {
+  if (!supabaseUser || !cloudReady) return;
+
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(() => {
+    syncNow();
+  }, 350);
 }
 
 async function downloadTableFromCloud(table) {
@@ -4288,17 +4323,27 @@ async function downloadTableFromCloud(table) {
 }
 
 async function loadCloudData() {
-  if (!supabaseClient || !supabaseUser) return false;
+  if (!supabaseClient || !supabaseUser) {
+    return { ok: false, mode: 'not-connected' };
+  }
 
   try {
+    // First read the cloud. If the account already has data, cloud wins.
     const [cloudChunks, cloudTags, cloudFolders] = await Promise.all([
       downloadTableFromCloud('chunks'),
       downloadTableFromCloud('tags'),
       downloadTableFromCloud('folders')
     ]);
 
-    const hasCloudData = cloudChunks.length || cloudTags.length || cloudFolders.length;
-    const hasLocalData = chunks.length || tags.length || folders.length;
+    const hasCloudData =
+      cloudChunks.length > 0 ||
+      cloudTags.length > 0 ||
+      cloudFolders.length > 0;
+
+    const hasLocalData =
+      chunks.length > 0 ||
+      tags.length > 0 ||
+      folders.length > 0;
 
     if (hasCloudData) {
       chunks = cloudChunks.map(migrateChunk);
@@ -4317,56 +4362,77 @@ async function loadCloudData() {
       if (document.querySelector('[data-tab="explorer"].active')) renderExplorer();
       if (document.querySelector('[data-tab="practice"].active')) renderPractice();
 
-      return true;
+      return { ok: true, mode: 'download' };
     }
 
-    // First login on an account: keep existing local data and upload it.
+    // First login to an empty account: preserve local data and upload it.
     if (hasLocalData) {
       await uploadLocalDataToCloud();
+      return { ok: true, mode: 'upload' };
     }
 
-    return false;
+    return { ok: true, mode: 'empty' };
   } catch (error) {
     console.error('Supabase cloud load failed:', error);
     setAuthMessage(`Cloud sync error: ${error.message}`, 'error');
-    return false;
+    return { ok: false, mode: 'error', error };
   }
+}
+
+async function finishCloudLogin() {
+  cloudReady = false;
+  setAuthMessage('Signed in. Syncing…', 'ok');
+
+  const result = await loadCloudData();
+
+  if (result.ok) {
+    cloudReady = true;
+    updateAuthUI();
+    setAuthMessage('☁️ Synced successfully.', 'ok');
+  } else {
+    // Keep the account signed in, but DO NOT claim that sync succeeded.
+    cloudReady = false;
+    updateAuthUI();
+  }
+
+  return result.ok;
 }
 
 async function initSupabaseAuth() {
   if (!supabaseClient) {
     console.warn('Supabase client could not be loaded.');
+    setAuthMessage('Cloud service could not be loaded.', 'error');
     return;
   }
 
   updateAuthUI();
 
   const { data, error } = await supabaseClient.auth.getSession();
-  if (error) console.error('getSession failed:', error);
+  if (error) {
+    console.error('getSession failed:', error);
+    setAuthMessage(`Session error: ${error.message}`, 'error');
+    return;
+  }
 
   if (data?.session?.user) {
     supabaseUser = data.session.user;
-    cloudReady = false;
-    await loadCloudData();
-    cloudReady = true;
-    updateAuthUI();
+    await finishCloudLogin();
   }
 
   supabaseClient.auth.onAuthStateChange(async (event, session) => {
     supabaseUser = session?.user || null;
-    cloudReady = false;
     updateAuthUI();
 
     if (event === 'SIGNED_IN' && supabaseUser) {
-      await loadCloudData();
-      cloudReady = true;
-      updateAuthUI();
-      setAuthMessage('☁️ Synced successfully.', 'ok');
+      await finishCloudLogin();
     }
 
     if (event === 'SIGNED_OUT') {
       cloudReady = false;
+      clearTimeout(cloudSyncTimer);
+      cloudSyncInFlight = null;
       setAuthMessage('');
+      updateAuthUI();
     }
   });
 }
@@ -4380,14 +4446,24 @@ async function signInWithEmail() {
     return;
   }
 
+  if (!supabaseClient) {
+    setAuthMessage('Cloud service is unavailable.', 'error');
+    return;
+  }
+
+  setAuthBusy(true);
   setAuthMessage('Signing in…');
+
   const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+  setAuthBusy(false);
 
   if (error) {
     setAuthMessage(error.message, 'error');
     return;
   }
 
+  // The SIGNED_IN auth event performs the actual cloud sync.
   setAuthMessage('Signed in. Syncing…', 'ok');
 }
 
@@ -4405,6 +4481,12 @@ async function signUpWithEmail() {
     return;
   }
 
+  if (!supabaseClient) {
+    setAuthMessage('Cloud service is unavailable.', 'error');
+    return;
+  }
+
+  setAuthBusy(true);
   setAuthMessage('Creating account…');
 
   const { data, error } = await supabaseClient.auth.signUp({
@@ -4415,6 +4497,8 @@ async function signUpWithEmail() {
     }
   });
 
+  setAuthBusy(false);
+
   if (error) {
     setAuthMessage(error.message, 'error');
     return;
@@ -4422,17 +4506,24 @@ async function signUpWithEmail() {
 
   if (data.session) {
     setAuthMessage('Account created. Syncing…', 'ok');
+    // Normally SIGNED_IN will handle this automatically.
   } else {
-    setAuthMessage('Account created. Check your email and confirm the address, then sign in.', 'ok');
+    setAuthMessage(
+      'Account created. Check your email and confirm the address, then sign in.',
+      'ok'
+    );
   }
 }
 
 async function signOutFromSupabase() {
+  if (!supabaseClient) return;
+
   const { error } = await supabaseClient.auth.signOut();
   if (error) {
     setAuthMessage(error.message, 'error');
     return;
   }
+
   closeAuthModal();
 }
 
