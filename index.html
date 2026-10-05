@@ -2760,6 +2760,71 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+<!-- ==================== AUTH MODAL ==================== -->
+<div class="auth-modal" id="authModal" aria-hidden="true">
+  <div class="auth-card">
+    <button
+      class="auth-close"
+      id="authCloseBtn"
+      type="button"
+      aria-label="Close"
+    >×</button>
+
+    <h3>☁️ Chunkoholic Cloud</h3>
+
+    <p>
+      Sign in to sync your chunks, tags and folders
+      across your devices.
+    </p>
+
+    <input
+      id="authEmail"
+      type="email"
+      autocomplete="email"
+      placeholder="Email"
+    >
+
+    <input
+      id="authPassword"
+      type="password"
+      autocomplete="current-password"
+      placeholder="Password"
+    >
+
+    <div class="auth-actions">
+      <button
+        class="btn"
+        id="authSignInBtn"
+        type="button"
+      >
+        Sign in
+      </button>
+
+      <button
+        class="btn"
+        id="authSignUpBtn"
+        type="button"
+      >
+        Create account
+      </button>
+
+      <button
+        class="btn"
+        id="authSignOutBtn"
+        type="button"
+        style="display:none;"
+      >
+        Sign out
+      </button>
+    </div>
+
+    <div
+      class="auth-message"
+      id="authMessage"
+      aria-live="polite"
+    ></div>
+  </div>
+</div>
 
 <header class="header">
   <div class="lang-toggle-container">
