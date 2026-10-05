@@ -2646,7 +2646,118 @@
       padding: 10px 6px;
     }
   }
+
+  /* ==================== SUPABASE AUTH UI ==================== */
+  .auth-bar {
+    position: absolute;
+    top: 68px;
+    right: 20px;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .auth-btn {
+    border: 1px solid var(--cocoa);
+    background: rgba(0,0,0,0.45);
+    color: var(--cream);
+    border-radius: 10px;
+    padding: 7px 12px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 800;
+    cursor: pointer;
+    backdrop-filter: blur(5px);
+  }
+  .auth-btn:hover { border-color: var(--cherry); color: var(--kirsch-gold); }
+  .auth-status {
+    font-size: 0.7rem;
+    color: var(--kirsch-gold);
+    opacity: 0.9;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .auth-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.72);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+  .auth-modal.show { display: flex; }
+  .auth-card {
+    width: min(420px, 100%);
+    background: linear-gradient(145deg, var(--milk-choc), var(--bitter));
+    border: 2px solid var(--cocoa);
+    border-radius: 18px;
+    padding: 24px;
+    box-shadow: 0 20px 70px rgba(0,0,0,0.55);
+  }
+  .auth-card h3 {
+    font-family: 'Playfair Display', serif;
+    color: var(--kirsch-gold);
+    font-size: 1.5rem;
+    margin-bottom: 6px;
+  }
+  .auth-card p {
+    color: var(--cream);
+    opacity: 0.78;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+  .auth-card input {
+    width: 100%;
+    margin-bottom: 10px;
+    background: rgba(0,0,0,0.35);
+    border: 2px solid var(--cocoa);
+    border-radius: 10px;
+    padding: 11px 12px;
+    color: var(--cream);
+    font-family: 'Nunito', sans-serif;
+    outline: none;
+  }
+  .auth-card input:focus {
+    border-color: var(--cherry);
+    box-shadow: 0 0 0 3px var(--glow-cherry);
+  }
+  .auth-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .auth-actions .btn { flex: 1; min-width: 120px; padding: 10px 12px; font-size: 0.78rem; }
+  .auth-message {
+    min-height: 22px;
+    margin-top: 12px;
+    font-size: 0.78rem;
+    line-height: 1.4;
+  }
+  .auth-message.error { color: #ff8c8c; }
+  .auth-message.ok { color: #b8d88e; }
+  .auth-close {
+    float: right;
+    background: transparent;
+    border: 0;
+    color: var(--cream);
+    opacity: 0.7;
+    font-size: 1.3rem;
+    cursor: pointer;
+  }
+  @media (max-width: 600px) {
+    .auth-bar { top: 66px; right: 10px; }
+    .auth-status { display: none; }
+    .lang-toggle-container { right: 10px; }
+  }
+
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -2657,6 +2768,11 @@
   <span class="lang-label" id="labelES" onclick="setLang('es')">ES</span>
   <span class="lang-label" id="labelFR" onclick="setLang('fr')">FR</span>
 </div>
+
+  <div class="auth-bar">
+    <span class="auth-status" id="authStatus">☁️ Local mode</span>
+    <button class="auth-btn" id="authOpenBtn" type="button">☁️ Sign in</button>
+  </div>
 
   <div class="logo">Kirschholiker <span>🍒</span></div>
   <div class="tagline" data-i18n="tagline">Deine Kirschsammlung — ein Stück nach dem anderen</div>
@@ -3963,6 +4079,308 @@ function loadBackground() {
 }
 loadBackground();
 
+
+// ==================== SUPABASE CLOUD SYNC ====================
+// Safe browser-side setup: this is the PUBLIC/PUBLISHABLE key only.
+// Never put the Supabase secret/service_role key into this file.
+const SUPABASE_URL = 'https://anpjsztzavzawqizchul.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zuk8Ed2AIjy2G9vZid3ZBQ_OKPklKVe';
+
+const supabaseClient = window.supabase
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
+  : null;
+
+let supabaseUser = null;
+let cloudReady = false;
+let cloudSyncTimer = null;
+
+function setAuthMessage(message, type = '') {
+  const el = document.getElementById('authMessage');
+  if (!el) return;
+  el.textContent = message || '';
+  el.className = `auth-message ${type}`.trim();
+}
+
+function updateAuthUI() {
+  const status = document.getElementById('authStatus');
+  const openBtn = document.getElementById('authOpenBtn');
+  const signIn = document.getElementById('authSignInBtn');
+  const signUp = document.getElementById('authSignUpBtn');
+  const signOut = document.getElementById('authSignOutBtn');
+
+  if (!status || !openBtn) return;
+
+  if (supabaseUser) {
+    status.textContent = `☁️ ${supabaseUser.email || 'Synced'}`;
+    openBtn.textContent = '☁️ Account';
+    if (signIn) signIn.style.display = 'none';
+    if (signUp) signUp.style.display = 'none';
+    if (signOut) signOut.style.display = 'inline-flex';
+  } else {
+    status.textContent = '☁️ Local mode';
+    openBtn.textContent = '☁️ Sign in';
+    if (signIn) signIn.style.display = 'inline-flex';
+    if (signUp) signUp.style.display = 'inline-flex';
+    if (signOut) signOut.style.display = 'none';
+  }
+}
+
+function openAuthModal() {
+  const modal = document.getElementById('authModal');
+  if (!modal) return;
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden', 'false');
+  updateAuthUI();
+}
+
+function closeAuthModal() {
+  const modal = document.getElementById('authModal');
+  if (!modal) return;
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden', 'true');
+  setAuthMessage('');
+}
+
+function localSave(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+function getCloudRows(table) {
+  const source = table === 'chunks' ? chunks : table === 'tags' ? tags : folders;
+  const userId = supabaseUser?.id;
+  if (!userId) return [];
+  return source.map(item => ({
+    id: item.id,
+    user_id: userId,
+    data: item,
+    updated_at: new Date().toISOString()
+  }));
+}
+
+async function syncTableToCloud(table) {
+  if (!supabaseClient || !supabaseUser || !cloudReady) return;
+
+  try {
+    const rows = getCloudRows(table);
+    const { data: existing, error: readError } = await supabaseClient
+      .from(table)
+      .select('id')
+      .eq('user_id', supabaseUser.id);
+
+    if (readError) throw readError;
+
+    const localIds = new Set(rows.map(r => r.id));
+    const staleIds = (existing || []).map(r => r.id).filter(id => !localIds.has(id));
+
+    if (staleIds.length) {
+      const { error } = await supabaseClient
+        .from(table)
+        .delete()
+        .eq('user_id', supabaseUser.id)
+        .in('id', staleIds);
+      if (error) throw error;
+    }
+
+    for (let i = 0; i < rows.length; i += 200) {
+      const batch = rows.slice(i, i + 200);
+      if (!batch.length) continue;
+      const { error } = await supabaseClient
+        .from(table)
+        .upsert(batch, { onConflict: 'id' });
+      if (error) throw error;
+    }
+  } catch (error) {
+    console.error(`Supabase sync failed for ${table}:`, error);
+  }
+}
+
+function scheduleCloudSync() {
+  if (!supabaseUser || !cloudReady) return;
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(() => {
+    syncTableToCloud('chunks');
+    syncTableToCloud('tags');
+    syncTableToCloud('folders');
+  }, 350);
+}
+
+async function uploadLocalDataToCloud() {
+  await syncTableToCloud('chunks');
+  await syncTableToCloud('tags');
+  await syncTableToCloud('folders');
+}
+
+async function downloadTableFromCloud(table) {
+  const { data, error } = await supabaseClient
+    .from(table)
+    .select('id,data,updated_at')
+    .eq('user_id', supabaseUser.id)
+    .order('updated_at', { ascending: true });
+
+  if (error) throw error;
+  return (data || []).map(row => row.data);
+}
+
+async function loadCloudData() {
+  if (!supabaseClient || !supabaseUser) return false;
+
+  try {
+    const [cloudChunks, cloudTags, cloudFolders] = await Promise.all([
+      downloadTableFromCloud('chunks'),
+      downloadTableFromCloud('tags'),
+      downloadTableFromCloud('folders')
+    ]);
+
+    const hasCloudData = cloudChunks.length || cloudTags.length || cloudFolders.length;
+    const hasLocalData = chunks.length || tags.length || folders.length;
+
+    if (hasCloudData) {
+      chunks = cloudChunks.map(migrateChunk);
+      tags = cloudTags;
+      folders = cloudFolders;
+
+      localSave(STORAGE_KEY, chunks);
+      localSave(TAGS_KEY, tags);
+      localSave(FOLDERS_KEY, folders);
+
+      updateStats();
+      renderFolders();
+      refreshAddTagPicker();
+      renderTagFilterBar();
+      renderCollection(searchInput.value);
+      if (document.querySelector('[data-tab="explorer"].active')) renderExplorer();
+      if (document.querySelector('[data-tab="practice"].active')) renderPractice();
+
+      return true;
+    }
+
+    // First login on an account: keep existing local data and upload it.
+    if (hasLocalData) {
+      await uploadLocalDataToCloud();
+    }
+
+    return false;
+  } catch (error) {
+    console.error('Supabase cloud load failed:', error);
+    setAuthMessage(`Cloud sync error: ${error.message}`, 'error');
+    return false;
+  }
+}
+
+async function initSupabaseAuth() {
+  if (!supabaseClient) {
+    console.warn('Supabase client could not be loaded.');
+    return;
+  }
+
+  updateAuthUI();
+
+  const { data, error } = await supabaseClient.auth.getSession();
+  if (error) console.error('getSession failed:', error);
+
+  if (data?.session?.user) {
+    supabaseUser = data.session.user;
+    cloudReady = false;
+    await loadCloudData();
+    cloudReady = true;
+    updateAuthUI();
+  }
+
+  supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    supabaseUser = session?.user || null;
+    cloudReady = false;
+    updateAuthUI();
+
+    if (event === 'SIGNED_IN' && supabaseUser) {
+      await loadCloudData();
+      cloudReady = true;
+      updateAuthUI();
+      setAuthMessage('☁️ Synced successfully.', 'ok');
+    }
+
+    if (event === 'SIGNED_OUT') {
+      cloudReady = false;
+      setAuthMessage('');
+    }
+  });
+}
+
+async function signInWithEmail() {
+  const email = document.getElementById('authEmail')?.value.trim();
+  const password = document.getElementById('authPassword')?.value;
+
+  if (!email || !password) {
+    setAuthMessage('Enter your email and password.', 'error');
+    return;
+  }
+
+  setAuthMessage('Signing in…');
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    setAuthMessage(error.message, 'error');
+    return;
+  }
+
+  setAuthMessage('Signed in. Syncing…', 'ok');
+}
+
+async function signUpWithEmail() {
+  const email = document.getElementById('authEmail')?.value.trim();
+  const password = document.getElementById('authPassword')?.value;
+
+  if (!email || !password) {
+    setAuthMessage('Enter your email and password.', 'error');
+    return;
+  }
+
+  if (password.length < 6) {
+    setAuthMessage('Password must contain at least 6 characters.', 'error');
+    return;
+  }
+
+  setAuthMessage('Creating account…');
+
+  const { data, error } = await supabaseClient.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: window.location.href
+    }
+  });
+
+  if (error) {
+    setAuthMessage(error.message, 'error');
+    return;
+  }
+
+  if (data.session) {
+    setAuthMessage('Account created. Syncing…', 'ok');
+  } else {
+    setAuthMessage('Account created. Check your email and confirm the address, then sign in.', 'ok');
+  }
+}
+
+async function signOutFromSupabase() {
+  const { error } = await supabaseClient.auth.signOut();
+  if (error) {
+    setAuthMessage(error.message, 'error');
+    return;
+  }
+  closeAuthModal();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('authOpenBtn')?.addEventListener('click', openAuthModal);
+  document.getElementById('authCloseBtn')?.addEventListener('click', closeAuthModal);
+  document.getElementById('authModal')?.addEventListener('click', e => {
+    if (e.target.id === 'authModal') closeAuthModal();
+  });
+  document.getElementById('authSignInBtn')?.addEventListener('click', signInWithEmail);
+  document.getElementById('authSignUpBtn')?.addEventListener('click', signUpWithEmail);
+  document.getElementById('authSignOutBtn')?.addEventListener('click', signOutFromSupabase);
+});
+
 function loadChunks() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
   catch { return []; }
@@ -3985,6 +4403,7 @@ function migrateChunk(c) {
 
 function saveChunks(chunks) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(chunks));
+  scheduleCloudSync();
 }
 
 function loadTags() {
@@ -3994,6 +4413,7 @@ function loadTags() {
 
 function saveTags(tags) {
   localStorage.setItem(TAGS_KEY, JSON.stringify(tags));
+  scheduleCloudSync();
 }
 
 function loadFolders() {
@@ -4003,6 +4423,7 @@ function loadFolders() {
 
 function saveFolders(folders) {
   localStorage.setItem(FOLDERS_KEY, JSON.stringify(folders));
+  scheduleCloudSync();
 }
 
 function generateId() {
@@ -5968,6 +6389,7 @@ $('exportImportModal').addEventListener('click', (e) => {
 
 // Init Lang
 setLang('de');
+initSupabaseAuth();
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
