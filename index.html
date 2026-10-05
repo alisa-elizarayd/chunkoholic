@@ -4286,50 +4286,107 @@ function getCloudRows(table) {
   }));
 }
 
+/*
+ * Cloud-sync resilience layer.
+ *
+ * Mobile browsers can occasionally report a network-level
+ * `TypeError: Load failed` even when Supabase itself is healthy.
+ * We retry transient failures instead of immediately marking the
+ * whole sync as failed.
+ */
+const CLOUD_RETRY_ATTEMPTS = 3;
+const CLOUD_RETRY_DELAYS = [700, 1400, 2500];
+
+function isTransientCloudError(error) {
+  const message = String(error?.message || error || '').toLowerCase();
+  return (
+    message.includes('load failed') ||
+    message.includes('failed to fetch') ||
+    message.includes('networkerror') ||
+    message.includes('network error') ||
+    message.includes('fetch failed') ||
+    message.includes('timeout') ||
+    message.includes('timed out')
+  );
+}
+
+function waitForCloudRetry(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function withCloudRetry(operation, label) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= CLOUD_RETRY_ATTEMPTS; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+
+      console.warn(
+        `Supabase ${label} failed (attempt ${attempt}/${CLOUD_RETRY_ATTEMPTS}):`,
+        error
+      );
+
+      if (!isTransientCloudError(error) || attempt === CLOUD_RETRY_ATTEMPTS) {
+        throw error;
+      }
+
+      await waitForCloudRetry(CLOUD_RETRY_DELAYS[attempt - 1] || 2500);
+    }
+  }
+
+  throw lastError;
+}
+
 async function syncTableToCloud(table) {
   if (!supabaseClient || !supabaseUser) return false;
 
-  const rows = getCloudRows(table);
+  return withCloudRetry(async () => {
+    const rows = getCloudRows(table);
 
-  const { data: existing, error: readError } = await supabaseClient
-    .from(table)
-    .select('id')
-    .eq('user_id', supabaseUser.id);
-
-  if (readError) throw readError;
-
-  const localIds = new Set(rows.map(row => row.id));
-  const staleIds = (existing || [])
-    .map(row => row.id)
-    .filter(id => !localIds.has(id));
-
-  if (staleIds.length) {
-    const { error } = await supabaseClient
+    const { data: existing, error: readError } = await supabaseClient
       .from(table)
-      .delete()
-      .eq('user_id', supabaseUser.id)
-      .in('id', staleIds);
+      .select('id')
+      .eq('user_id', supabaseUser.id);
 
-    if (error) throw error;
-  }
+    if (readError) throw readError;
 
-  for (let i = 0; i < rows.length; i += 200) {
-    const batch = rows.slice(i, i + 200);
-    if (!batch.length) continue;
+    const localIds = new Set(rows.map(row => row.id));
+    const staleIds = (existing || [])
+      .map(row => row.id)
+      .filter(id => !localIds.has(id));
 
-    // IMPORTANT: the database primary key is (user_id, id),
-    // so Supabase/PostgREST must use BOTH columns for the conflict target.
-    const { error } = await supabaseClient
-      .from(table)
-      .upsert(batch, { onConflict: 'user_id,id' });
+    if (staleIds.length) {
+      const { error } = await supabaseClient
+        .from(table)
+        .delete()
+        .eq('user_id', supabaseUser.id)
+        .in('id', staleIds);
 
-    if (error) throw error;
-  }
+      if (error) throw error;
+    }
 
-  return true;
+    for (let i = 0; i < rows.length; i += 200) {
+      const batch = rows.slice(i, i + 200);
+      if (!batch.length) continue;
+
+      // IMPORTANT: the database primary key is (user_id, id),
+      // so Supabase/PostgREST must use BOTH columns for the conflict target.
+      const { error } = await supabaseClient
+        .from(table)
+        .upsert(batch, { onConflict: 'user_id,id' });
+
+      if (error) throw error;
+    }
+
+    return true;
+  }, `upload ${table}`);
 }
 
 async function uploadLocalDataToCloud() {
+  // Keep this sequential: if one table has a transient network failure,
+  // the retry layer handles that table without racing all three requests.
   await syncTableToCloud('chunks');
   await syncTableToCloud('tags');
   await syncTableToCloud('folders');
@@ -4345,13 +4402,17 @@ async function syncNow() {
     try {
       // Apply explicit local deletions first, then upsert the current local state.
       const deletions = getCloudDeletions();
+
       for (const deletion of deletions) {
-        const { error } = await supabaseClient
-          .from(deletion.table)
-          .delete()
-          .eq('user_id', supabaseUser.id)
-          .eq('id', deletion.id);
-        if (error) throw error;
+        await withCloudRetry(async () => {
+          const { error } = await supabaseClient
+            .from(deletion.table)
+            .delete()
+            .eq('user_id', supabaseUser.id)
+            .eq('id', deletion.id);
+
+          if (error) throw error;
+        }, `delete ${deletion.table}/${deletion.id}`);
       }
 
       await uploadLocalDataToCloud();
@@ -4361,7 +4422,14 @@ async function syncNow() {
       return true;
     } catch (error) {
       console.error('Supabase background sync failed:', error);
-      setAuthMessage(`Cloud sync error: ${error.message}`, 'error');
+
+      // Keep the pending/deletion markers intact. This is important:
+      // if the device is temporarily offline, the next sync can retry.
+      setAuthMessage(
+        `Cloud sync temporarily unavailable: ${error?.message || error}`,
+        'error'
+      );
+
       return false;
     } finally {
       cloudSyncInFlight = null;
@@ -4384,14 +4452,16 @@ function scheduleCloudSync() {
 }
 
 async function downloadTableFromCloud(table) {
-  const { data, error } = await supabaseClient
-    .from(table)
-    .select('id,data,updated_at')
-    .eq('user_id', supabaseUser.id)
-    .order('updated_at', { ascending: true });
+  return withCloudRetry(async () => {
+    const { data, error } = await supabaseClient
+      .from(table)
+      .select('id,data,updated_at')
+      .eq('user_id', supabaseUser.id)
+      .order('updated_at', { ascending: true });
 
-  if (error) throw error;
-  return (data || []).map(row => row.data);
+    if (error) throw error;
+    return (data || []).map(row => row.data);
+  }, `download ${table}`);
 }
 
 function mergeById(localItems, cloudItems, deletedIds = new Set()) {
@@ -4494,7 +4564,7 @@ async function loadCloudData() {
     return { ok: true, mode: 'empty' };
   } catch (error) {
     console.error('Supabase cloud load failed:', error);
-    setAuthMessage(`Cloud sync error: ${error.message}`, 'error');
+    setAuthMessage(`Cloud sync error: ${error?.message || error}`, 'error');
     return { ok: false, mode: 'error', error };
   }
 }
