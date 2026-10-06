@@ -1,0 +1,7 @@
+{
+  "name": "chunkoholic-supabase-proxy",
+  "version": "1.0.0",
+  "deploy": {
+    "entrypoint": "proxy/index.ts"
+  }
+}
