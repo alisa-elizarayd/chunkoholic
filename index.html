@@ -2757,7 +2757,7 @@
   }
 
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script>
 </head>
 <body>
 <!-- ==================== AUTH MODAL ==================== -->
@@ -4151,54 +4151,9 @@ loadBackground();
 const SUPABASE_URL = 'https://anpjsztzavzawqizchul.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zuk8Ed2AIjy2G9vZid3ZBQ_OKPklKVe';
 
-// Mobile Safari can surface transient network/CORS failures as
-// `TypeError: Load failed`. Give Supabase requests a small, bounded
-// retry window without changing the auth or cloud-sync architecture.
-const SUPABASE_FETCH_RETRIES = 3;
-const SUPABASE_FETCH_RETRY_DELAYS = [500, 1200, 2500];
-
-function isSupabaseNetworkError(error) {
-  const message = String(error?.message || error || '').toLowerCase();
-  return (
-    message.includes('load failed') ||
-    message.includes('failed to fetch') ||
-    message.includes('networkerror') ||
-    message.includes('network error') ||
-    message.includes('fetch failed') ||
-    message.includes('timeout') ||
-    message.includes('timed out')
-  );
-}
-
-function waitForSupabaseRetry(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function supabaseFetchWithRetry(input, init) {
-  let lastError;
-
-  for (let attempt = 1; attempt <= SUPABASE_FETCH_RETRIES; attempt++) {
-    try {
-      // Clone Request objects before each attempt so a consumed body can
-      // safely be sent again on Safari.
-      const request = input instanceof Request ? input.clone() : input;
-      return await fetch(request, init);
-    } catch (error) {
-      lastError = error;
-
-      if (!isSupabaseNetworkError(error) || attempt === SUPABASE_FETCH_RETRIES) {
-        throw error;
-      }
-
-      await waitForSupabaseRetry(
-        SUPABASE_FETCH_RETRY_DELAYS[attempt - 1] || 2500
-      );
-    }
-  }
-
-  throw lastError;
-}
-
+// Keep the Supabase client itself boring and standards-compliant.
+// All retry/error policy lives in withCloudRetry() below so auth and data
+// operations do not accidentally retry the same POST at multiple layers.
 const supabaseClient = window.supabase
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
       auth: {
@@ -4206,9 +4161,6 @@ const supabaseClient = window.supabase
         autoRefreshToken: true,
         detectSessionInUrl: true,
         storage: window.localStorage
-      },
-      global: {
-        fetch: supabaseFetchWithRetry
       }
     })
   : null;
@@ -4348,8 +4300,14 @@ function getCloudRows(table) {
 const CLOUD_RETRY_ATTEMPTS = 3;
 const CLOUD_RETRY_DELAYS = [700, 1400, 2500];
 
+function getErrorMessage(error) {
+  if (!error) return '';
+  if (typeof error === 'string') return error;
+  return String(error.message || error.error_description || error.error || error);
+}
+
 function isTransientCloudError(error) {
-  const message = String(error?.message || error || '').toLowerCase();
+  const message = getErrorMessage(error).toLowerCase();
   return (
     message.includes('load failed') ||
     message.includes('failed to fetch') ||
@@ -4357,7 +4315,8 @@ function isTransientCloudError(error) {
     message.includes('network error') ||
     message.includes('fetch failed') ||
     message.includes('timeout') ||
-    message.includes('timed out')
+    message.includes('timed out') ||
+    message.includes('aborted')
   );
 }
 
@@ -4373,7 +4332,6 @@ async function withCloudRetry(operation, label) {
       return await operation();
     } catch (error) {
       lastError = error;
-
       console.warn(
         `Supabase ${label} failed (attempt ${attempt}/${CLOUD_RETRY_ATTEMPTS}):`,
         error
@@ -4477,7 +4435,7 @@ async function syncNow() {
       // Keep the pending/deletion markers intact. This is important:
       // if the device is temporarily offline, the next sync can retry.
       setAuthMessage(
-        `Cloud sync temporarily unavailable: ${error?.message || error}`,
+        `Cloud sync temporarily unavailable: ${getErrorMessage(error) || 'network error'}`,
         'error'
       );
 
@@ -4539,11 +4497,18 @@ async function loadCloudData() {
   }
 
   try {
-    const [cloudChunks, cloudTags, cloudFolders] = await Promise.all([
+    const results = await Promise.all([
       downloadTableFromCloud('chunks'),
       downloadTableFromCloud('tags'),
       downloadTableFromCloud('folders')
-    ]);
+    ].map(promise => promise.then(data => ({ ok: true, data })).catch(error => ({ ok: false, error }))));
+
+    const failed = results.find(result => !result.ok);
+    if (failed) {
+      throw failed.error || new Error('One or more cloud tables could not be loaded.');
+    }
+
+    const [cloudChunks, cloudTags, cloudFolders] = results.map(result => result.data);
 
     const pending = hasPendingCloudChanges();
     const deletions = getCloudDeletions();
@@ -4564,8 +4529,6 @@ async function loadCloudData() {
       folders.length > 0;
 
     if (pending) {
-      // We have local changes that happened before/while auth was restored.
-      // Merge instead of blindly replacing localStorage with cloud data.
       chunks = mergeById(chunks, cloudChunks.map(migrateChunk), deletedByTable.chunks).map(migrateChunk);
       tags = mergeById(tags, cloudTags, deletedByTable.tags);
       folders = mergeById(folders, cloudFolders, deletedByTable.folders);
@@ -4586,8 +4549,6 @@ async function loadCloudData() {
     }
 
     if (hasCloudData) {
-      // No pending local changes: this is a normal login on another device,
-      // so the cloud snapshot becomes the local snapshot.
       chunks = cloudChunks.map(migrateChunk);
       tags = cloudTags;
       folders = cloudFolders;
@@ -4608,63 +4569,82 @@ async function loadCloudData() {
     }
 
     if (hasLocalData) {
-      // First login to an empty account: preserve local data and upload it.
       return { ok: true, mode: 'upload' };
     }
 
     return { ok: true, mode: 'empty' };
   } catch (error) {
     console.error('Supabase cloud load failed:', error);
-    setAuthMessage(`Cloud sync error: ${error?.message || error}`, 'error');
     return { ok: false, mode: 'error', error };
   }
 }
 
 async function finishCloudLogin() {
+  if (!supabaseUser || !supabaseClient) return false;
+
+  // Authentication success must not depend on cloud data loading.
   cloudReady = false;
-  setAuthMessage('Signed in. Syncing…', 'ok');
+  updateAuthUI();
+  setAuthMessage('Signed in. Connecting cloud sync…', 'ok');
 
   const result = await loadCloudData();
 
-  if (result.ok) {
-    cloudReady = true;
-    updateAuthUI();
-
-    // Flush changes that may have happened before auth/session restoration.
-    const synced = await syncNow();
-
-    if (synced) {
-      setAuthMessage('☁️ Synced successfully.', 'ok');
-    }
-  } else {
-    // Keep the account signed in, but DO NOT claim that sync succeeded.
+  if (!result.ok) {
     cloudReady = false;
     updateAuthUI();
+    setAuthMessage(
+      `Signed in, but cloud sync is temporarily unavailable. Your local data is safe.${isTransientCloudError(result.error) && navigator.onLine === false ? ' Reconnect to the internet to sync.' : ''}`,
+      'error'
+    );
+    return false;
   }
 
-  return result.ok;
+  cloudReady = true;
+  updateAuthUI();
+
+  const synced = await syncNow();
+  if (synced) {
+    setAuthMessage('☁️ Signed in and synced.', 'ok');
+  } else {
+    setAuthMessage('☁️ Signed in. Cloud sync will retry automatically.', 'ok');
+  }
+
+  return true;
+}
+
+function startCloudInitialization() {
+  if (!supabaseUser || !supabaseClient) return Promise.resolve(false);
+  if (authInitPromise) return authInitPromise;
+
+  authInitPromise = finishCloudLogin().finally(() => {
+    authInitPromise = null;
+  });
+
+  return authInitPromise;
 }
 
 async function initSupabaseAuth() {
   if (!supabaseClient) {
     console.warn('Supabase client could not be loaded.');
-    setAuthMessage('Cloud service could not be loaded.', 'error');
+    updateAuthUI();
+    setAuthMessage('Cloud service could not be loaded. The app will stay in local mode.', 'error');
     return;
   }
 
   updateAuthUI();
 
-  // Register the listener BEFORE getSession so we cannot miss a SIGNED_IN
-  // event while the initial session is being restored.
   supabaseClient.auth.onAuthStateChange((event, session) => {
     supabaseUser = session?.user || null;
-    updateAuthUI();
 
     if (event === 'SIGNED_IN' && supabaseUser) {
-      // Do not await Supabase calls directly inside the auth callback.
-      queueMicrotask(() => {
-        authInitPromise = finishCloudLogin();
-      });
+      updateAuthUI();
+      queueMicrotask(() => startCloudInitialization());
+      return;
+    }
+
+    if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+      updateAuthUI();
+      return;
     }
 
     if (event === 'SIGNED_OUT') {
@@ -4678,20 +4658,40 @@ async function initSupabaseAuth() {
     }
   });
 
-  const { data, error } = await supabaseClient.auth.getSession();
-  if (error) {
-    console.error('getSession failed:', error);
-    setAuthMessage(`Session error: ${error.message}`, 'error');
-    return;
-  }
+  try {
+    const { data, error } = await supabaseClient.auth.getSession();
+    if (error) throw error;
 
-  if (data?.session?.user) {
-    supabaseUser = data.session.user;
+    if (data?.session?.user) {
+      supabaseUser = data.session.user;
+      updateAuthUI();
+      await startCloudInitialization();
+    }
+  } catch (error) {
+    console.error('Supabase session restore failed:', error);
     updateAuthUI();
-    authInitPromise = finishCloudLogin();
-    await authInitPromise;
+    setAuthMessage(
+      `Could not restore the cloud session. The app remains usable locally.${isTransientCloudError(error) ? ' We will retry when the connection returns.' : ''}`,
+      'error'
+    );
   }
 }
+
+async function retryCloudConnection() {
+  if (!supabaseUser || !supabaseClient) return;
+  if (navigator.onLine === false) return;
+  await startCloudInitialization();
+}
+
+window.addEventListener('online', () => {
+  retryCloudConnection().catch(error => console.warn('Reconnect cloud sync failed:', error));
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    retryCloudConnection().catch(error => console.warn('Visibility cloud sync failed:', error));
+  }
+});
 
 async function signInWithEmail() {
   const email = document.getElementById('authEmail')?.value.trim();
@@ -4703,24 +4703,36 @@ async function signInWithEmail() {
   }
 
   if (!supabaseClient) {
-    setAuthMessage('Cloud service is unavailable.', 'error');
+    setAuthMessage('Cloud service is unavailable. The app will stay in local mode.', 'error');
     return;
   }
 
   setAuthBusy(true);
   setAuthMessage('Signing in…');
 
-  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  try {
+    const result = await withCloudRetry(async () => {
+      const response = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (response.error) throw response.error;
+      return response;
+    }, 'sign in');
 
-  setAuthBusy(false);
+    setAuthMessage('Signed in. Syncing in the background…', 'ok');
+    return result;
+  } catch (error) {
+    console.error('Supabase sign in failed:', error);
 
-  if (error) {
-    setAuthMessage(error.message, 'error');
-    return;
+    if (isTransientCloudError(error)) {
+      setAuthMessage(
+        `Cannot reach the cloud service right now (${getErrorMessage(error) || 'network error'}). Check the connection and try again.`,
+        'error'
+      );
+    } else {
+      setAuthMessage(getErrorMessage(error) || 'Sign in failed.', 'error');
+    }
+  } finally {
+    setAuthBusy(false);
   }
-
-  // The SIGNED_IN auth event performs the actual cloud sync.
-  setAuthMessage('Signed in. Syncing…', 'ok');
 }
 
 async function signUpWithEmail() {
@@ -4738,36 +4750,42 @@ async function signUpWithEmail() {
   }
 
   if (!supabaseClient) {
-    setAuthMessage('Cloud service is unavailable.', 'error');
+    setAuthMessage('Cloud service is unavailable. The app will stay in local mode.', 'error');
     return;
   }
 
   setAuthBusy(true);
   setAuthMessage('Creating account…');
 
-  const { data, error } = await supabaseClient.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: window.location.href
+  try {
+    const { data, error } = await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: window.location.href
+      }
+    });
+
+    if (error) throw error;
+
+    if (data.session) {
+      setAuthMessage('Account created. Syncing in the background…', 'ok');
+    } else {
+      setAuthMessage(
+        'Account created. Check your email and confirm the address, then sign in.',
+        'ok'
+      );
     }
-  });
-
-  setAuthBusy(false);
-
-  if (error) {
-    setAuthMessage(error.message, 'error');
-    return;
-  }
-
-  if (data.session) {
-    setAuthMessage('Account created. Syncing…', 'ok');
-    // Normally SIGNED_IN will handle this automatically.
-  } else {
+  } catch (error) {
+    console.error('Supabase sign up failed:', error);
     setAuthMessage(
-      'Account created. Check your email and confirm the address, then sign in.',
-      'ok'
+      isTransientCloudError(error)
+        ? 'Could not reach the cloud service. Check the connection and try again.'
+        : (getErrorMessage(error) || 'Account creation failed.'),
+      'error'
     );
+  } finally {
+    setAuthBusy(false);
   }
 }
 
