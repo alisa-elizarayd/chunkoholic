@@ -15,8 +15,6 @@
 <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Nunito:wght@400;600;700;800&display=swap');
-
   :root {
     --dark-choc: #1F0E08;
     --bitter: #2E1409;
@@ -48,7 +46,7 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    font-family: 'Nunito', sans-serif;
+    font-family: 'Nunito', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     color: var(--cream);
     min-height: 100vh;
     overflow-x: hidden;
@@ -182,7 +180,7 @@
   }
 
   .logo {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
     font-size: 2.8rem;
     font-weight: 900;
     background: linear-gradient(135deg, var(--cherry-bright) 0%, var(--kirsch-gold) 40%, var(--cherry-bright) 60%, #E8B84B 100%);
@@ -2757,7 +2755,6 @@
   }
 
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"></script>
 </head>
 <body>
 <!-- ==================== AUTH MODAL ==================== -->
@@ -4154,16 +4151,73 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zuk8Ed2AIjy2G9vZid3ZBQ_OKPklKVe
 // Keep the Supabase client itself boring and standards-compliant.
 // All retry/error policy lives in withCloudRetry() below so auth and data
 // operations do not accidentally retry the same POST at multiple layers.
-const supabaseClient = window.supabase
-  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        storage: window.localStorage
+let supabaseClient = null;
+let supabaseLoadPromise = null;
+
+function loadExternalScript(src, timeoutMs = 5000) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    let settled = false;
+    const finish = (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      script.onload = null;
+      script.onerror = null;
+      error ? reject(error) : resolve();
+    };
+    const timer = setTimeout(() => finish(new Error('Supabase SDK load timeout')), timeoutMs);
+    script.src = src;
+    script.async = true;
+    script.onload = () => finish();
+    script.onerror = () => finish(new Error('Supabase SDK network error'));
+    document.head.appendChild(script);
+  });
+}
+
+async function ensureSupabaseClient() {
+  if (supabaseClient) return supabaseClient;
+  if (supabaseLoadPromise) return supabaseLoadPromise;
+
+  supabaseLoadPromise = (async () => {
+    if (!window.supabase) {
+      try {
+        await loadExternalScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2');
+      } catch (firstError) {
+        console.warn('Primary Supabase CDN failed, trying fallback:', firstError);
+        try {
+          await loadExternalScript('https://unpkg.com/@supabase/supabase-js@2.117.2/dist/umd/supabase.js');
+        } catch (secondError) {
+          console.warn('Fallback Supabase CDN failed:', secondError);
+          return null;
+        }
       }
-    })
-  : null;
+    }
+
+    if (!window.supabase?.createClient) return null;
+
+    supabaseClient = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY,
+      {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+          storage: window.localStorage
+        }
+      }
+    );
+
+    return supabaseClient;
+  })();
+
+  try {
+    return await supabaseLoadPromise;
+  } finally {
+    supabaseLoadPromise = null;
+  }
+}
 
 const CLOUD_PENDING_KEY = 'chunkoholic_cloud_sync_pending_v1';
 const CLOUD_DELETIONS_KEY = 'chunkoholic_cloud_deletions_v1';
@@ -4624,14 +4678,17 @@ function startCloudInitialization() {
 }
 
 async function initSupabaseAuth() {
-  if (!supabaseClient) {
+  // Never block the app shell on a third-party CDN.
+  // The local app renders first; cloud sync initializes in the background.
+  updateAuthUI();
+
+  const client = await ensureSupabaseClient();
+  if (!client) {
     console.warn('Supabase client could not be loaded.');
     updateAuthUI();
     setAuthMessage('Cloud service could not be loaded. The app will stay in local mode.', 'error');
     return;
   }
-
-  updateAuthUI();
 
   supabaseClient.auth.onAuthStateChange((event, session) => {
     supabaseUser = session?.user || null;
@@ -7140,7 +7197,14 @@ $('exportImportModal').addEventListener('click', (e) => {
 
 // Init Lang
 setLang('de');
-initSupabaseAuth();
+
+// Start cloud auth only after the complete local app has rendered.
+requestAnimationFrame(() => {
+  initSupabaseAuth().catch(error => {
+    console.error('Cloud initialization failed:', error);
+    setAuthMessage('Cloud service is unavailable. The app remains usable locally.', 'error');
+  });
+});
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
