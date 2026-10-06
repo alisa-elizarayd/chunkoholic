@@ -4685,39 +4685,6 @@ async function finishCloudLogin() {
   return true;
 }
 
-async function finishCloudLogin() {
-  if (!supabaseUser || !supabaseClient) return false;
-
-  // Authentication success must not depend on cloud data loading.
-  cloudReady = false;
-  updateAuthUI();
-  setAuthMessage('Signed in. Connecting cloud sync…', 'ok');
-
-  const result = await loadCloudData();
-
-  if (!result.ok) {
-    cloudReady = false;
-    updateAuthUI();
-    setAuthMessage(
-      `Signed in, but cloud sync is temporarily unavailable. Your local data is safe.${isTransientCloudError(result.error) && navigator.onLine === false ? ' Reconnect to the internet to sync.' : ''}`,
-      'error'
-    );
-    return false;
-  }
-
-  cloudReady = true;
-  updateAuthUI();
-
-  const synced = await syncNow();
-  if (synced) {
-    setAuthMessage('☁️ Signed in and synced.', 'ok');
-  } else {
-    setAuthMessage('☁️ Signed in. Cloud sync will retry automatically.', 'ok');
-  }
-
-  return true;
-}
-
 function startCloudInitialization() {
   if (!supabaseUser || !supabaseClient) return Promise.resolve(false);
   if (authInitPromise) return authInitPromise;
