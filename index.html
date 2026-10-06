@@ -4772,15 +4772,49 @@ async function signUpWithEmail() {
 }
 
 async function signOutFromSupabase() {
-  if (!supabaseClient) return;
-
-  const { error } = await supabaseClient.auth.signOut();
-  if (error) {
-    setAuthMessage(error.message, 'error');
+  if (!supabaseClient) {
+    // No cloud client means there is no remote session to revoke.
+    supabaseUser = null;
+    cloudReady = false;
+    updateAuthUI();
+    closeAuthModal();
     return;
   }
 
-  closeAuthModal();
+  setAuthBusy(true);
+  setAuthMessage('Signing out…');
+
+  try {
+    // Mobile Safari may temporarily fail to reach Supabase. Reuse the
+    // same low-level fetch retry layer as sign-in/cloud sync.
+    await withCloudRetry(
+      async () => {
+        const { error } = await supabaseClient.auth.signOut();
+        if (error) throw error;
+      },
+      'sign out'
+    );
+  } catch (error) {
+    console.warn('Supabase sign out failed:', error);
+
+    // If Supabase cannot be reached, still clear the local session so the
+    // user is not trapped in an account on a temporarily unavailable network.
+    try {
+      await supabaseClient.auth.signOut({ scope: 'local' });
+    } catch (localError) {
+      console.warn('Local Supabase sign out fallback failed:', localError);
+    }
+  } finally {
+    supabaseUser = null;
+    cloudReady = false;
+    clearTimeout(cloudSyncTimer);
+    cloudSyncInFlight = null;
+    clearCloudSyncPending();
+    clearCloudDeletions();
+    updateAuthUI();
+    setAuthBusy(false);
+    closeAuthModal();
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
