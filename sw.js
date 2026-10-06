@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chunkoholic-v10';
+const CACHE_NAME = 'chunkoholic-v11';
 
 const APP_FILES = [
   './',
@@ -44,24 +44,26 @@ self.addEventListener('fetch', event => {
     event.request.destination === 'document';
 
   if (isNavigation) {
+    // Load the cached app shell immediately when available.
+    // This prevents a slow mobile network from making the whole app appear frozen.
     event.respondWith(
-      fetch(event.request)
-        .then(networkResponse => {
-          if (networkResponse.ok) {
-            const responseToCache = networkResponse.clone();
-            event.waitUntil(
-              caches.open(CACHE_NAME).then(cache =>
-                cache.put(event.request, responseToCache)
-              )
-            );
-          }
-          return networkResponse;
-        })
-        .catch(() =>
-          caches.match(event.request).then(cachedResponse =>
-            cachedResponse || caches.match('./index.html')
-          )
-        )
+      caches.match(event.request).then(cachedResponse => {
+        const networkPromise = fetch(event.request)
+          .then(networkResponse => {
+            if (networkResponse.ok) {
+              const responseToCache = networkResponse.clone();
+              event.waitUntil(
+                caches.open(CACHE_NAME).then(cache =>
+                  cache.put(event.request, responseToCache)
+                )
+              );
+            }
+            return networkResponse;
+          })
+          .catch(() => cachedResponse || caches.match('./index.html'));
+
+        return cachedResponse || networkPromise;
+      })
     );
     return;
   }
