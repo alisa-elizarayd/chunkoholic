@@ -4175,6 +4175,18 @@ function loadExternalScript(src, timeoutMs = 5000) {
   });
 }
 
+function createBoundedFetch(timeoutMs = 10000) {
+  return async (input, init = {}) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await window.fetch(input, { ...init, signal: init.signal || controller.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+}
+
 async function ensureSupabaseClient() {
   if (supabaseClient) return supabaseClient;
   if (supabaseLoadPromise) return supabaseLoadPromise;
@@ -4205,6 +4217,9 @@ async function ensureSupabaseClient() {
           autoRefreshToken: true,
           detectSessionInUrl: true,
           storage: window.localStorage
+        },
+        global: {
+          fetch: createBoundedFetch(10000)
         }
       }
     );
@@ -4451,7 +4466,9 @@ function isTransientCloudError(error) {
     message.includes('timeout') ||
     message.includes('timed out') ||
     message.includes('aborted') ||
-    message.includes('network request failed')
+    message.includes('network request failed') ||
+    message.includes('aborterror') ||
+    message.includes('the operation was aborted')
   );
 }
 
