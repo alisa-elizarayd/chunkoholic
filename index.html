@@ -4680,7 +4680,15 @@ async function initSupabaseAuth() {
 async function retryCloudConnection() {
   if (!supabaseUser || !supabaseClient) return;
   if (navigator.onLine === false) return;
-  await startCloudInitialization();
+
+  // Re-initialize only when cloud sync is unavailable. When already connected,
+  // only flush pending local changes instead of downloading the whole dataset
+  // on every visibility/online event.
+  if (!cloudReady) {
+    await startCloudInitialization();
+  } else if (hasPendingCloudChanges()) {
+    await syncNow();
+  }
 }
 
 window.addEventListener('online', () => {
