@@ -4154,51 +4154,6 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zuk8Ed2AIjy2G9vZid3ZBQ_OKPklKVe
 // Mobile Safari can surface transient network/CORS failures as
 // `TypeError: Load failed`. Give Supabase requests a small, bounded
 // retry window without changing the auth or cloud-sync architecture.
-const SUPABASE_FETCH_RETRIES = 3;
-const SUPABASE_FETCH_RETRY_DELAYS = [500, 1200, 2500];
-
-function isSupabaseNetworkError(error) {
-  const message = String(error?.message || error || '').toLowerCase();
-  return (
-    message.includes('load failed') ||
-    message.includes('failed to fetch') ||
-    message.includes('networkerror') ||
-    message.includes('network error') ||
-    message.includes('fetch failed') ||
-    message.includes('timeout') ||
-    message.includes('timed out')
-  );
-}
-
-function waitForSupabaseRetry(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function supabaseFetchWithRetry(input, init) {
-  let lastError;
-
-  for (let attempt = 1; attempt <= SUPABASE_FETCH_RETRIES; attempt++) {
-    try {
-      // Clone Request objects before each attempt so a consumed body can
-      // safely be sent again on Safari.
-      const request = input instanceof Request ? input.clone() : input;
-      return await fetch(request, init);
-    } catch (error) {
-      lastError = error;
-
-      if (!isSupabaseNetworkError(error) || attempt === SUPABASE_FETCH_RETRIES) {
-        throw error;
-      }
-
-      await waitForSupabaseRetry(
-        SUPABASE_FETCH_RETRY_DELAYS[attempt - 1] || 2500
-      );
-    }
-  }
-
-  throw lastError;
-}
-
 const supabaseClient = window.supabase
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
       auth: {
