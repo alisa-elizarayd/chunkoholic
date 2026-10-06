@@ -4252,6 +4252,41 @@ function getCloudDirty() {
   }
 }
 
+function migrateLegacyCloudState() {
+  const legacyPending = localStorage.getItem('chunkoholic_cloud_sync_pending_v1') === '1';
+  const legacyDeletionsKey = 'chunkoholic_cloud_deletions_v1';
+  const legacyDeletionsRaw = localStorage.getItem(legacyDeletionsKey);
+
+  if (legacyPending) {
+    markCloudDirty('chunks', chunks.filter(item => !item.isDemo));
+    markCloudDirty('tags', tags);
+    markCloudDirty('folders', folders);
+  }
+
+  if (legacyDeletionsRaw) {
+    try {
+      const legacyDeletions = JSON.parse(legacyDeletionsRaw) || [];
+      const current = getCloudDeletions();
+      for (const deletion of legacyDeletions) {
+        if (
+          deletion?.table &&
+          deletion?.id &&
+          !current.some(item => item.table === deletion.table && item.id === deletion.id)
+        ) {
+          current.push({ table: deletion.table, id: deletion.id });
+        }
+      }
+      localStorage.setItem(CLOUD_DELETIONS_KEY, JSON.stringify(current));
+      markCloudSyncPending();
+    } catch (error) {
+      console.warn('Could not migrate legacy cloud deletion queue:', error);
+    }
+  }
+
+  if (legacyPending) localStorage.removeItem('chunkoholic_cloud_sync_pending_v1');
+  if (legacyDeletionsRaw) localStorage.removeItem(legacyDeletionsKey);
+}
+
 function markCloudDirty(table, ids) {
   const dirty = getCloudDirty();
   const current = new Set(dirty[table] || []);
@@ -4555,12 +4590,16 @@ async function downloadTableFromCloud(table) {
 }
 
 function applyCloudTable(table, rows) {
-  const cloudItems = (rows || []).map(row => row.data).filter(Boolean);
   const target = table === 'chunks' ? chunks : table === 'tags' ? tags : folders;
-
+  const dirtyIds = new Set(getCloudDirty()[table] || []);
   const byId = new Map(target.filter(item => item?.id).map(item => [item.id, item]));
+
+  // Remote data updates only clean records. Dirty local records remain authoritative
+  // until their queued upload succeeds.
   for (const row of rows || []) {
-    if (row?.data?.id) byId.set(row.data.id, row.data);
+    if (row?.data?.id && !dirtyIds.has(row.data.id)) {
+      byId.set(row.data.id, row.data);
+    }
   }
 
   const merged = Array.from(byId.values());
@@ -4693,6 +4732,7 @@ function startCloudInitialization() {
 async function initSupabaseAuth() {
   // Never block the app shell on a third-party CDN.
   // The local app renders first; cloud sync initializes in the background.
+  migrateLegacyCloudState();
   updateAuthUI();
 
   const client = await ensureSupabaseClient();
