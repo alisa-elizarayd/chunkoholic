@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chunkoholic-v3';
+const CACHE_NAME = 'chunkoholic-3.0-v1';
 
 const APP_FILES = [
   './',
