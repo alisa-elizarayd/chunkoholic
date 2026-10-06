@@ -5051,6 +5051,228 @@ function analyzeText(text, lengthFilter = 'all') {
     .slice(0, 60);
 }
 
+// ==================== MOBILE-SAFE AUTO ANALYSIS ====================
+// Keep the original synchronous analyzer above untouched as a fallback.
+// The primary path moves tokenization + n-gram analysis off the UI thread.
+const AUTO_ANALYSIS_WORKER_SOURCE = `
+  function tokenizeTextWorker(text) {
+    const sentences = text.match(/[^.!?]+[.!?]+/g) || (text.trim() ? [text.trim() + '.'] : []);
+    const result = { sentences: [], allWords: [] };
+    let globalIdx = 0;
+    sentences.forEach((sent, sentIdx) => {
+      const tokens = [];
+      const regex = /([a-zäöüßA-ZÄÖÜ0-9'-]+)|([^\\s])/g;
+      let match;
+      while ((match = regex.exec(sent)) !== null) {
+        if (match[1]) {
+          const wordObj = { type: 'word', value: match[1], sentenceIdx: sentIdx, globalIdx: globalIdx };
+          tokens.push(wordObj);
+          result.allWords.push(wordObj);
+          globalIdx++;
+        } else if (match[2]) {
+          tokens.push({ type: 'punct', value: match[2], sentenceIdx: sentIdx });
+        }
+      }
+      result.sentences.push({ text: sent.trim(), tokens, sentenceIdx: sentIdx });
+    });
+    return result;
+  }
+
+  function normalizeWordWorker(word, language) {
+    let lower = word.toLowerCase().replace(/[^a-z0-9äöüß'-]/g, '');
+    if (lower.length < 3) return lower;
+    if (language === 'de') {
+      if (lower.endsWith('te') && lower.length > 4) return lower.slice(0, -2) + 'en';
+      if (lower.endsWith('t') && lower.length > 3 && !lower.endsWith('igt') && !lower.endsWith('cht')) return lower.slice(0, -1) + 'en';
+      if (lower.endsWith('e') && lower.length > 3 && !lower.endsWith('ie') && !lower.endsWith('che')) return lower.slice(0, -1) + 'en';
+    } else {
+      if (lower.endsWith('s') && !lower.endsWith('ss') && lower.length > 3) return lower.slice(0, -1);
+      if (lower.endsWith('ed') && lower.length > 4) return lower.slice(0, -2);
+      if (lower.endsWith('ing') && lower.length > 5) return lower.slice(0, -3) + 'e';
+    }
+    return lower;
+  }
+
+  function analyzeTextWorker(text, lengthFilter, language, existingLowerArray, stopWordArray) {
+    const tokenized = tokenizeTextWorker(text);
+    const candidates = new Map();
+    const existingLower = new Set(existingLowerArray);
+    const stopWords = new Set(stopWordArray);
+    tokenized.sentences.forEach(sentence => {
+      const words = sentence.tokens.filter(t => t.type === 'word').map(t => t.value);
+      if (words.length === 0) return;
+      const parsedLength = parseInt(lengthFilter);
+      const minN = lengthFilter === 'all' ? 2 : parsedLength;
+      const maxN = lengthFilter === 'all' ? 6 : (parsedLength >= 5 ? 10 : parsedLength);
+      for (let n = minN; n <= Math.min(maxN, words.length); n++) {
+        for (let i = 0; i <= words.length - n; i++) {
+          const ngram = words.slice(i, i + n);
+          const firstNorm = normalizeWordWorker(ngram[0], language);
+          const lastNorm = normalizeWordWorker(ngram[ngram.length - 1], language);
+          if (stopWords.has(firstNorm) || stopWords.has(lastNorm)) continue;
+          if (ngram.some(w => /^[^a-z0-9äöüß]+$/i.test(w))) continue;
+          if (ngram.every(w => stopWords.has(normalizeWordWorker(w, language)))) continue;
+          const key = ngram.join(' ').toLowerCase();
+          if (!candidates.has(key)) {
+            candidates.set(key, {
+              words: ngram,
+              full: ngram.join(' '),
+              sentence: sentence.text,
+              count: 1,
+              length: n,
+              originalWords: [...ngram]
+            });
+          } else {
+            candidates.get(key).count++;
+          }
+        }
+      }
+    });
+    const autoCandidates = Array.from(candidates.values())
+      .map(c => ({ ...c, isDuplicate: existingLower.has(c.full.toLowerCase()) }))
+      .sort((a, b) => {
+        if (a.isDuplicate !== b.isDuplicate) return a.isDuplicate ? 1 : -1;
+        if (b.length !== a.length) return b.length - a.length;
+        return b.count - a.count;
+      })
+      .slice(0, 60);
+    return { tokenized, autoCandidates };
+  }
+
+  self.onmessage = function(event) {
+    try {
+      const data = event.data || {};
+      const result = analyzeTextWorker(
+        data.text || '',
+        data.lengthFilter || 'all',
+        data.language || 'en',
+        Array.isArray(data.existingLower) ? data.existingLower : [],
+        Array.isArray(data.stopWords) ? data.stopWords : []
+      );
+      self.postMessage({ ok: true, requestId: data.requestId, ...result });
+    } catch (error) {
+      self.postMessage({ ok: false, requestId: event.data && event.data.requestId, error: String(error && error.message || error) });
+    }
+  };
+`;
+
+let autoAnalysisWorker = null;
+let autoAnalysisRequestId = 0;
+let autoAnalysisBusy = false;
+
+function setAutoAnalysisBusy(isBusy) {
+  autoAnalysisBusy = isBusy;
+  if (analyzeBtn) {
+    analyzeBtn.disabled = isBusy;
+    analyzeBtn.setAttribute('aria-busy', isBusy ? 'true' : 'false');
+  }
+  const lengthRow = document.getElementById('lengthFilterRow');
+  if (lengthRow) lengthRow.style.pointerEvents = isBusy ? 'none' : '';
+}
+
+function destroyAutoAnalysisWorker() {
+  if (autoAnalysisWorker) {
+    try { autoAnalysisWorker.terminate(); } catch (_) {}
+    autoAnalysisWorker = null;
+  }
+}
+
+function analyzeTextAsyncFallback(text, lengthFilter) {
+  return new Promise((resolve) => {
+    const tokenized = tokenizeText(text);
+    const candidates = new Map();
+    const existingLower = new Set(chunks.map(c => c.full.toLowerCase()));
+    const stopWords = getStopWords();
+    const sentences = tokenized.sentences;
+    let sentenceIndex = 0;
+    const minN = lengthFilter === 'all' ? 2 : parseInt(lengthFilter);
+    const maxN = lengthFilter === 'all' ? 6 : (parseInt(lengthFilter) >= 5 ? 10 : parseInt(lengthFilter));
+
+    function processBatch() {
+      const batchEnd = Math.min(sentenceIndex + 3, sentences.length);
+      for (; sentenceIndex < batchEnd; sentenceIndex++) {
+        const sentence = sentences[sentenceIndex];
+        const words = sentence.tokens.filter(t => t.type === 'word').map(t => t.value);
+        if (words.length === 0) continue;
+        for (let n = minN; n <= Math.min(maxN, words.length); n++) {
+          for (let i = 0; i <= words.length - n; i++) {
+            const ngram = words.slice(i, i + n);
+            const firstNorm = normalizeWord(ngram[0]);
+            const lastNorm = normalizeWord(ngram[ngram.length - 1]);
+            if (stopWords.has(firstNorm) || stopWords.has(lastNorm)) continue;
+            if (ngram.some(w => /^[^a-z0-9äöüß]+$/i.test(w))) continue;
+            if (ngram.every(w => stopWords.has(normalizeWord(w)))) continue;
+            const key = ngram.join(' ').toLowerCase();
+            if (!candidates.has(key)) {
+              candidates.set(key, { words: ngram, full: ngram.join(' '), sentence: sentence.text, count: 1, length: n, originalWords: [...ngram] });
+            } else {
+              candidates.get(key).count++;
+            }
+          }
+        }
+      }
+      if (sentenceIndex < sentences.length) {
+        setTimeout(processBatch, 0);
+        return;
+      }
+      const autoCandidates = Array.from(candidates.values())
+        .map(c => ({ ...c, isDuplicate: existingLower.has(c.full.toLowerCase()) }))
+        .sort((a, b) => { if (a.isDuplicate !== b.isDuplicate) return a.isDuplicate ? 1 : -1; if (b.length !== a.length) return b.length - a.length; return b.count - a.count; })
+        .slice(0, 60);
+      resolve({ tokenized, autoCandidates });
+    }
+    processBatch();
+  });
+}
+
+function analyzeTextAsync(text, lengthFilter) {
+  const requestId = autoAnalysisRequestId;
+  const existingLower = chunks.map(c => c.full.toLowerCase());
+  const stopWords = Array.from(getStopWords());
+  const language = currentLang;
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let workerUrl = null;
+    const finish = (fn, value) => {
+      if (settled) return;
+      settled = true;
+      destroyAutoAnalysisWorker();
+      if (workerUrl) { try { URL.revokeObjectURL(workerUrl); } catch (_) {} workerUrl = null; }
+      fn(value);
+    };
+
+    try {
+      if (typeof Worker === 'function' && typeof Blob === 'function' && typeof URL !== 'undefined' && URL.createObjectURL) {
+        const blob = new Blob([AUTO_ANALYSIS_WORKER_SOURCE], { type: 'application/javascript' });
+        workerUrl = URL.createObjectURL(blob);
+        const worker = new Worker(workerUrl);
+        autoAnalysisWorker = worker;
+        const timeoutId = setTimeout(() => {
+          // Very old/restricted browsers can fail to start a Blob worker.
+          finish(resolve, analyzeTextAsyncFallback(text, lengthFilter));
+        }, 15000);
+        worker.onmessage = (event) => {
+          const data = event.data || {};
+          if (data.requestId !== requestId) return;
+          clearTimeout(timeoutId);
+          if (data.ok) finish(resolve, { tokenized: data.tokenized, autoCandidates: data.autoCandidates });
+          else finish(reject, new Error(data.error || 'Auto analysis failed'));
+        };
+        worker.onerror = () => {
+          clearTimeout(timeoutId);
+          finish(resolve, analyzeTextAsyncFallback(text, lengthFilter));
+        };
+        worker.postMessage({ requestId, text, lengthFilter, language, existingLower, stopWords });
+      } else {
+        finish(resolve, analyzeTextAsyncFallback(text, lengthFilter));
+      }
+    } catch (error) {
+      finish(resolve, analyzeTextAsyncFallback(text, lengthFilter));
+    }
+  });
+}
+
 let importTokenized = null;
 let autoCandidates = [];
 let autoSelected = new Set();
@@ -5063,6 +5285,7 @@ function renderInteractiveText() {
   const container = document.getElementById('interactiveText');
   if (!importTokenized) {
     container.innerHTML = '<span class="tokens-empty">' + translations[currentLang].importAnalyzeFirst + '</span>';
+    container.onclick = null;
     return;
   }
   let html = '';
@@ -5079,15 +5302,19 @@ function renderInteractiveText() {
     html += '</span> ';
   });
   container.innerHTML = html;
-  container.querySelectorAll('.iword').forEach(el => {
-    el.addEventListener('click', () => {
-      const gidx = parseInt(el.dataset.gidx);
-      if (selectedGlobalIdxs.has(gidx)) selectedGlobalIdxs.delete(gidx);
-      else selectedGlobalIdxs.add(gidx);
-      renderInteractiveText();
-      renderSelectionPreview();
-    });
-  });
+
+  // Event delegation: one handler for the whole text instead of one
+  // listener per word. This is much lighter on mobile Safari for long texts.
+  container.onclick = (e) => {
+    const el = e.target.closest('.iword');
+    if (!el || !container.contains(el)) return;
+    const gidx = parseInt(el.dataset.gidx, 10);
+    if (!Number.isFinite(gidx)) return;
+    if (selectedGlobalIdxs.has(gidx)) selectedGlobalIdxs.delete(gidx);
+    else selectedGlobalIdxs.add(gidx);
+    renderInteractiveText();
+    renderSelectionPreview();
+  };
 }
 
 function renderSelectionPreview() {
@@ -6615,26 +6842,51 @@ function attachWordClickHandlers(container, onWordClick) {
   });
 }
 
-analyzeBtn.addEventListener('click', () => {
+async function runAutoAnalysis() {
   const text = importTextarea.value.trim();
   if (!text) { showToast(translations[currentLang].importNoText); return; }
-  importTokenized = tokenizeText(text);
-  autoCandidates = analyzeText(text, currentLengthFilter);
-  autoSelected.clear();
-  autoCandidateModifications = {};
-  autoCandidates.forEach((c, idx) => { if (!c.isDuplicate) autoSelected.add(idx); });
-  manualCandidates = [];
-  selectedGlobalIdxs.clear();
-  document.getElementById('importWorkspace').style.display = 'block';
-  document.getElementById('lengthFilterRow').style.opacity = '0.5';
-  renderInteractiveText();
-  renderSelectionPreview();
-  renderAutoCandidates();
-  renderManualCandidatesList();
-  showToast(`${translations[currentLang].importAnalyzedPrefix} ${importTokenized.allWords.length} ${translations[currentLang].importAnalyzedSuffix}`);
-});
+  if (autoAnalysisBusy) return;
+
+  const analysisId = ++autoAnalysisRequestId;
+  const lengthFilterAtStart = currentLengthFilter;
+  setAutoAnalysisBusy(true);
+
+  try {
+    const result = await analyzeTextAsync(text, lengthFilterAtStart);
+    if (analysisId !== autoAnalysisRequestId) return;
+
+    importTokenized = result.tokenized;
+    autoCandidates = result.autoCandidates;
+    autoSelected.clear();
+    autoCandidateModifications = {};
+    autoCandidates.forEach((c, idx) => { if (!c.isDuplicate) autoSelected.add(idx); });
+    manualCandidates = [];
+    selectedGlobalIdxs.clear();
+    document.getElementById('importWorkspace').style.display = 'block';
+    document.getElementById('lengthFilterRow').style.opacity = '0.5';
+
+    // Let mobile Safari paint once before creating the candidate/text DOM.
+    await new Promise(requestAnimationFrame);
+    if (analysisId !== autoAnalysisRequestId) return;
+    renderInteractiveText();
+    renderSelectionPreview();
+    renderAutoCandidates();
+    renderManualCandidatesList();
+    showToast(`${translations[currentLang].importAnalyzedPrefix} ${importTokenized.allWords.length} ${translations[currentLang].importAnalyzedSuffix}`);
+  } catch (error) {
+    console.error('Auto analysis failed:', error);
+    showToast('⚠️ Auto analysis failed. Please try again.');
+  } finally {
+    if (analysisId === autoAnalysisRequestId) setAutoAnalysisBusy(false);
+  }
+}
+
+analyzeBtn.addEventListener('click', runAutoAnalysis);
 
 clearImportBtn.addEventListener('click', () => {
+  ++autoAnalysisRequestId;
+  destroyAutoAnalysisWorker();
+  setAutoAnalysisBusy(false);
   importTextarea.value = '';
   importTokenized = null;
   autoCandidates = [];
@@ -6665,16 +6917,31 @@ document.getElementById('clearManualBtn').addEventListener('click', () => {
 });
 
 document.querySelectorAll('.length-chip').forEach(chip => {
-  chip.addEventListener('click', () => {
+  chip.addEventListener('click', async () => {
+    if (autoAnalysisBusy) return;
     document.querySelectorAll('.length-chip').forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
     currentLengthFilter = chip.dataset.length;
-    if (importTextarea.value.trim() && importTokenized) {
-      autoCandidates = analyzeText(importTextarea.value.trim(), currentLengthFilter);
+    const text = importTextarea.value.trim();
+    if (!text || !importTokenized) return;
+
+    const analysisId = ++autoAnalysisRequestId;
+    setAutoAnalysisBusy(true);
+    try {
+      const result = await analyzeTextAsync(text, currentLengthFilter);
+      if (analysisId !== autoAnalysisRequestId) return;
+      autoCandidates = result.autoCandidates;
       autoSelected.clear();
       autoCandidateModifications = {};
       autoCandidates.forEach((c, idx) => { if (!c.isDuplicate) autoSelected.add(idx); });
+      await new Promise(requestAnimationFrame);
+      if (analysisId !== autoAnalysisRequestId) return;
       renderAutoCandidates();
+    } catch (error) {
+      console.error('Auto analysis filter failed:', error);
+      showToast('⚠️ Auto analysis failed. Please try again.');
+    } finally {
+      if (analysisId === autoAnalysisRequestId) setAutoAnalysisBusy(false);
     }
   });
 });
