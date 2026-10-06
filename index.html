@@ -4145,8 +4145,8 @@ loadBackground();
 // ==================== SUPABASE CLOUD SYNC ====================
 // Safe browser-side setup: this is the PUBLIC/PUBLISHABLE key only.
 // Never put the Supabase secret/service_role key into this file.
-const SUPABASE_URL = 'https://anpjsztzavzawqizchul.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zuk8Ed2AIjy2G9vZid3ZBQ_OKPklKVe';
+const SUPABASE_URL = 'https://gzagitqhygodyfkkebqb.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_nsMiNnNFoDIfuvgh6lutWQ_7w_DSPZq';
 
 // Keep the Supabase client itself boring and standards-compliant.
 // All retry/error policy lives in withCloudRetry() below so auth and data
@@ -4234,9 +4234,9 @@ async function ensureSupabaseClient() {
   }
 }
 
-const CLOUD_PENDING_KEY = 'chunkoholic_cloud_sync_pending_v2';
-const CLOUD_DELETIONS_KEY = 'chunkoholic_cloud_deletions_v2';
-const CLOUD_DIRTY_KEY = 'chunkoholic_cloud_dirty_v2';
+const CLOUD_PENDING_KEY = 'chunkoholic_cloud_sync_pending_v3';
+const CLOUD_DELETIONS_KEY = 'chunkoholic_cloud_deletions_v3';
+const CLOUD_DIRTY_KEY = 'chunkoholic_cloud_dirty_v3';
 
 let supabaseUser = null;
 let cloudReady = false;
@@ -4268,38 +4268,25 @@ function getCloudDirty() {
 }
 
 function migrateLegacyCloudState() {
-  const legacyPending = localStorage.getItem('chunkoholic_cloud_sync_pending_v1') === '1';
-  const legacyDeletionsKey = 'chunkoholic_cloud_deletions_v1';
-  const legacyDeletionsRaw = localStorage.getItem(legacyDeletionsKey);
+  const bootstrapKey = 'chunkoholic_cloud_v3_bootstrapped';
+  if (localStorage.getItem(bootstrapKey) === '1') return;
 
-  if (legacyPending) {
-    markCloudDirty('chunks', chunks.filter(item => !item.isDemo));
-    markCloudDirty('tags', tags);
-    markCloudDirty('folders', folders);
-  }
+  [
+    'chunkoholic_cloud_sync_pending_v1',
+    'chunkoholic_cloud_sync_pending_v2',
+    'chunkoholic_cloud_deletions_v1',
+    'chunkoholic_cloud_deletions_v2',
+    'chunkoholic_cloud_dirty_v1',
+    'chunkoholic_cloud_dirty_v2',
+    CLOUD_PENDING_KEY,
+    CLOUD_DELETIONS_KEY,
+    CLOUD_DIRTY_KEY
+  ].forEach(key => localStorage.removeItem(key));
 
-  if (legacyDeletionsRaw) {
-    try {
-      const legacyDeletions = JSON.parse(legacyDeletionsRaw) || [];
-      const current = getCloudDeletions();
-      for (const deletion of legacyDeletions) {
-        if (
-          deletion?.table &&
-          deletion?.id &&
-          !current.some(item => item.table === deletion.table && item.id === deletion.id)
-        ) {
-          current.push({ table: deletion.table, id: deletion.id });
-        }
-      }
-      localStorage.setItem(CLOUD_DELETIONS_KEY, JSON.stringify(current));
-      markCloudSyncPending();
-    } catch (error) {
-      console.warn('Could not migrate legacy cloud deletion queue:', error);
-    }
-  }
-
-  if (legacyPending) localStorage.removeItem('chunkoholic_cloud_sync_pending_v1');
-  if (legacyDeletionsRaw) localStorage.removeItem(legacyDeletionsKey);
+  markCloudDirty('chunks', chunks.filter(item => !item.isDemo).map(item => item.id));
+  markCloudDirty('tags', tags.map(item => item.id));
+  markCloudDirty('folders', folders.map(item => item.id));
+  localStorage.setItem(bootstrapKey, '1');
 }
 
 function markCloudDirty(table, ids) {
@@ -4498,7 +4485,8 @@ function rowsForTable(table, ids) {
     .map(item => ({
       id: item.id,
       user_id: supabaseUser.id,
-      data: item
+      data: item,
+      deleted_at: null
     }));
 }
 
@@ -4535,11 +4523,14 @@ async function processCloudDeletions() {
     await withCloudRetry(async () => {
       const { error } = await supabaseClient
         .from(deletion.table)
-        .delete()
-        .eq('user_id', supabaseUser.id)
-        .eq('id', deletion.id);
+        .upsert({
+          id: deletion.id,
+          user_id: supabaseUser.id,
+          data: {},
+          deleted_at: new Date().toISOString()
+        }, { onConflict: 'user_id,id' });
       if (error) throw error;
-    }, `delete ${deletion.table}/${deletion.id}`);
+    }, 'tombstone ' + deletion.table + '/' + deletion.id);
   }
 
   clearCloudDeletions();
@@ -4597,7 +4588,7 @@ async function downloadTableFromCloud(table) {
   return withCloudRetry(async () => {
     const { data, error } = await supabaseClient
       .from(table)
-      .select('id,data,updated_at')
+      .select('id,data,updated_at,deleted_at')
       .eq('user_id', supabaseUser.id)
       .order('updated_at', { ascending: true });
 
@@ -4611,12 +4602,13 @@ function applyCloudTable(table, rows) {
   const dirtyIds = new Set(getCloudDirty()[table] || []);
   const byId = new Map(target.filter(item => item?.id).map(item => [item.id, item]));
 
-  // Remote data updates only clean records. Dirty local records remain authoritative
-  // until their queued upload succeeds.
   for (const row of rows || []) {
-    if (row?.data?.id && !dirtyIds.has(row.data.id)) {
-      byId.set(row.data.id, row.data);
+    if (!row?.id || dirtyIds.has(row.id)) continue;
+    if (row.deleted_at) {
+      byId.delete(row.id);
+      continue;
     }
+    if (row.data?.id) byId.set(row.id, row.data);
   }
 
   const merged = Array.from(byId.values());
