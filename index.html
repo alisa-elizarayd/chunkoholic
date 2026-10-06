@@ -4219,14 +4219,16 @@ async function ensureSupabaseClient() {
   }
 }
 
-const CLOUD_PENDING_KEY = 'chunkoholic_cloud_sync_pending_v1';
-const CLOUD_DELETIONS_KEY = 'chunkoholic_cloud_deletions_v1';
+const CLOUD_PENDING_KEY = 'chunkoholic_cloud_sync_pending_v2';
+const CLOUD_DELETIONS_KEY = 'chunkoholic_cloud_deletions_v2';
+const CLOUD_DIRTY_KEY = 'chunkoholic_cloud_dirty_v2';
 
 let supabaseUser = null;
 let cloudReady = false;
 let cloudSyncTimer = null;
 let cloudSyncInFlight = null;
 let authInitPromise = null;
+let cloudLastError = null;
 
 function hasPendingCloudChanges() {
   return localStorage.getItem(CLOUD_PENDING_KEY) === '1';
@@ -4238,6 +4240,29 @@ function markCloudSyncPending() {
 
 function clearCloudSyncPending() {
   localStorage.removeItem(CLOUD_PENDING_KEY);
+}
+
+function getCloudDirty() {
+  try {
+    return JSON.parse(localStorage.getItem(CLOUD_DIRTY_KEY)) || {
+      chunks: [], tags: [], folders: []
+    };
+  } catch {
+    return { chunks: [], tags: [], folders: [] };
+  }
+}
+
+function markCloudDirty(table, ids) {
+  const dirty = getCloudDirty();
+  const current = new Set(dirty[table] || []);
+  for (const id of ids || []) if (id) current.add(id);
+  dirty[table] = Array.from(current);
+  localStorage.setItem(CLOUD_DIRTY_KEY, JSON.stringify(dirty));
+  markCloudSyncPending();
+}
+
+function clearCloudDirty() {
+  localStorage.removeItem(CLOUD_DIRTY_KEY);
 }
 
 function getCloudDeletions() {
@@ -4254,11 +4279,31 @@ function rememberCloudDeletion(table, id) {
     deletions.push({ table, id });
     localStorage.setItem(CLOUD_DELETIONS_KEY, JSON.stringify(deletions));
   }
+  const dirty = getCloudDirty();
+  dirty[table] = (dirty[table] || []).filter(existingId => existingId !== id);
+  localStorage.setItem(CLOUD_DIRTY_KEY, JSON.stringify(dirty));
+  markCloudSyncPending();
 }
 
 function clearCloudDeletions() {
   localStorage.removeItem(CLOUD_DELETIONS_KEY);
 }
+
+function getLocalItems(table) {
+  if (table === 'chunks') return chunks.filter(item => !item.isDemo);
+  if (table === 'tags') return tags;
+  if (table === 'folders') return folders;
+  return [];
+}
+
+function getLocalItem(table, id) {
+  return getLocalItems(table).find(item => item.id === id) || null;
+}
+
+function markTableDirty(table, items) {
+  markCloudDirty(table, (items || []).map(item => item?.id));
+}
+
 
 function setAuthMessage(message, type = '') {
   const el = document.getElementById('authMessage');
@@ -4344,12 +4389,12 @@ function getCloudRows(table) {
 }
 
 /*
- * Cloud-sync resilience layer.
- *
- * Mobile browsers can occasionally report a network-level
- * `TypeError: Load failed` even when Supabase itself is healthy.
- * We retry transient failures instead of immediately marking the
- * whole sync as failed.
+ * Cloud sync:
+ * - localStorage remains the source of truth for instant UI updates
+ * - only dirty rows are uploaded
+ * - remote updated_at is authoritative
+ * - initial cloud load is independent per table
+ * - a failed table never blocks the other tables
  */
 const CLOUD_RETRY_ATTEMPTS = 3;
 const CLOUD_RETRY_DELAYS = [700, 1400, 2500];
@@ -4370,7 +4415,8 @@ function isTransientCloudError(error) {
     message.includes('fetch failed') ||
     message.includes('timeout') ||
     message.includes('timed out') ||
-    message.includes('aborted')
+    message.includes('aborted') ||
+    message.includes('network request failed')
   );
 }
 
@@ -4380,119 +4426,100 @@ function waitForCloudRetry(ms) {
 
 async function withCloudRetry(operation, label) {
   let lastError;
-
   for (let attempt = 1; attempt <= CLOUD_RETRY_ATTEMPTS; attempt++) {
     try {
       return await operation();
     } catch (error) {
       lastError = error;
-      console.warn(
-        `Supabase ${label} failed (attempt ${attempt}/${CLOUD_RETRY_ATTEMPTS}):`,
-        error
-      );
-
-      if (!isTransientCloudError(error) || attempt === CLOUD_RETRY_ATTEMPTS) {
-        throw error;
-      }
-
+      console.warn(`Supabase ${label} failed (attempt ${attempt}/${CLOUD_RETRY_ATTEMPTS}):`, error);
+      if (!isTransientCloudError(error) || attempt === CLOUD_RETRY_ATTEMPTS) throw error;
       await waitForCloudRetry(CLOUD_RETRY_DELAYS[attempt - 1] || 2500);
     }
   }
-
   throw lastError;
 }
 
-async function syncTableToCloud(table) {
-  if (!supabaseClient || !supabaseUser) return false;
+function rowsForTable(table, ids) {
+  return (ids || [])
+    .map(id => getLocalItem(table, id))
+    .filter(Boolean)
+    .map(item => ({
+      id: item.id,
+      user_id: supabaseUser.id,
+      data: item
+    }));
+}
+
+async function uploadDirtyTable(table) {
+  const dirty = getCloudDirty();
+  const ids = dirty[table] || [];
+  if (!ids.length) return true;
 
   return withCloudRetry(async () => {
-    const rows = getCloudRows(table);
+    const rows = rowsForTable(table, ids);
+    if (!rows.length) {
+      dirty[table] = [];
+      localStorage.setItem(CLOUD_DIRTY_KEY, JSON.stringify(dirty));
+      return true;
+    }
 
-    const { data: existing, error: readError } = await supabaseClient
+    const { error } = await supabaseClient
       .from(table)
-      .select('id')
-      .eq('user_id', supabaseUser.id);
+      .upsert(rows, { onConflict: 'user_id,id' });
 
-    if (readError) throw readError;
+    if (error) throw error;
 
-    const localIds = new Set(rows.map(row => row.id));
-    const staleIds = (existing || [])
-      .map(row => row.id)
-      .filter(id => !localIds.has(id));
-
-    if (staleIds.length) {
-      const { error } = await supabaseClient
-        .from(table)
-        .delete()
-        .eq('user_id', supabaseUser.id)
-        .in('id', staleIds);
-
-      if (error) throw error;
-    }
-
-    for (let i = 0; i < rows.length; i += 200) {
-      const batch = rows.slice(i, i + 200);
-      if (!batch.length) continue;
-
-      // IMPORTANT: the database primary key is (user_id, id),
-      // so Supabase/PostgREST must use BOTH columns for the conflict target.
-      const { error } = await supabaseClient
-        .from(table)
-        .upsert(batch, { onConflict: 'user_id,id' });
-
-      if (error) throw error;
-    }
-
+    dirty[table] = (dirty[table] || []).filter(id => !ids.includes(id));
+    localStorage.setItem(CLOUD_DIRTY_KEY, JSON.stringify(dirty));
     return true;
   }, `upload ${table}`);
 }
 
-async function uploadLocalDataToCloud() {
-  // Keep this sequential: if one table has a transient network failure,
-  // the retry layer handles that table without racing all three requests.
-  await syncTableToCloud('chunks');
-  await syncTableToCloud('tags');
-  await syncTableToCloud('folders');
+async function processCloudDeletions() {
+  const deletions = getCloudDeletions();
+  if (!deletions.length) return true;
+
+  for (const deletion of deletions) {
+    await withCloudRetry(async () => {
+      const { error } = await supabaseClient
+        .from(deletion.table)
+        .delete()
+        .eq('user_id', supabaseUser.id)
+        .eq('id', deletion.id);
+      if (error) throw error;
+    }, `delete ${deletion.table}/${deletion.id}`);
+  }
+
+  clearCloudDeletions();
   return true;
 }
 
 async function syncNow() {
-  if (!supabaseClient || !supabaseUser || !cloudReady) return false;
-
+  if (!supabaseClient || !supabaseUser || !cloudReady || navigator.onLine === false) return false;
   if (cloudSyncInFlight) return cloudSyncInFlight;
 
   cloudSyncInFlight = (async () => {
     try {
-      // Apply explicit local deletions first, then upsert the current local state.
-      const deletions = getCloudDeletions();
+      await processCloudDeletions();
+      await uploadDirtyTable('chunks');
+      await uploadDirtyTable('tags');
+      await uploadDirtyTable('folders');
 
-      for (const deletion of deletions) {
-        await withCloudRetry(async () => {
-          const { error } = await supabaseClient
-            .from(deletion.table)
-            .delete()
-            .eq('user_id', supabaseUser.id)
-            .eq('id', deletion.id);
-
-          if (error) throw error;
-        }, `delete ${deletion.table}/${deletion.id}`);
+      if (!getCloudDeletions().length) {
+        const dirty = getCloudDirty();
+        const hasDirty = Object.values(dirty).some(ids => ids.length);
+        if (!hasDirty) clearCloudSyncPending();
       }
 
-      await uploadLocalDataToCloud();
-
-      clearCloudDeletions();
-      clearCloudSyncPending();
+      cloudLastError = null;
       return true;
     } catch (error) {
+      cloudLastError = error;
       console.error('Supabase background sync failed:', error);
-
-      // Keep the pending/deletion markers intact. This is important:
-      // if the device is temporarily offline, the next sync can retry.
       setAuthMessage(
         `Cloud sync temporarily unavailable: ${getErrorMessage(error) || 'network error'}`,
         'error'
       );
-
       return false;
     } finally {
       cloudSyncInFlight = null;
@@ -4502,16 +4529,16 @@ async function syncNow() {
   return cloudSyncInFlight;
 }
 
-function scheduleCloudSync() {
-  // Remember the change even if authentication is still initializing.
-  markCloudSyncPending();
+function scheduleCloudSync(table = null, items = null) {
+  if (table && items) markTableDirty(table, items);
+  else markCloudSyncPending();
 
-  if (!supabaseUser || !cloudReady) return;
+  if (!supabaseUser || !cloudReady || navigator.onLine === false) return;
 
   clearTimeout(cloudSyncTimer);
   cloudSyncTimer = setTimeout(() => {
-    syncNow();
-  }, 350);
+    syncNow().catch(error => console.warn('Scheduled cloud sync failed:', error));
+  }, 500);
 }
 
 async function downloadTableFromCloud(table) {
@@ -4523,114 +4550,100 @@ async function downloadTableFromCloud(table) {
       .order('updated_at', { ascending: true });
 
     if (error) throw error;
-    return (data || []).map(row => row.data);
+    return data || [];
   }, `download ${table}`);
 }
 
-function mergeById(localItems, cloudItems, deletedIds = new Set()) {
-  const merged = new Map();
+function applyCloudTable(table, rows) {
+  const cloudItems = (rows || []).map(row => row.data).filter(Boolean);
+  const target = table === 'chunks' ? chunks : table === 'tags' ? tags : folders;
 
-  // Cloud data provides the remote baseline.
-  for (const item of cloudItems || []) {
-    if (item?.id && !deletedIds.has(item.id)) merged.set(item.id, item);
+  const byId = new Map(target.filter(item => item?.id).map(item => [item.id, item]));
+  for (const row of rows || []) {
+    if (row?.data?.id) byId.set(row.data.id, row.data);
   }
 
-  // Local data wins for IDs that exist locally. This is important after a
-  // refresh: a just-created/edited local item must not be overwritten by
-  // an older cloud snapshot while auth is being restored.
-  for (const item of localItems || []) {
-    if (item?.id && !deletedIds.has(item.id)) merged.set(item.id, item);
+  const merged = Array.from(byId.values());
+  if (table === 'chunks') {
+    chunks = merged.map(migrateChunk);
+    localSave(STORAGE_KEY, chunks);
+  } else if (table === 'tags') {
+    tags = merged;
+    localSave(TAGS_KEY, tags);
+  } else {
+    folders = merged;
+    localSave(FOLDERS_KEY, folders);
   }
-
-  return Array.from(merged.values());
 }
 
 async function loadCloudData() {
-  if (!supabaseClient || !supabaseUser) {
-    return { ok: false, mode: 'not-connected' };
+  if (!supabaseClient || !supabaseUser) return { ok: false, mode: 'not-connected' };
+
+  const tables = ['chunks', 'tags', 'folders'];
+  const results = await Promise.all(
+    tables.map(async table => {
+      try {
+        return { table, ok: true, rows: await downloadTableFromCloud(table) };
+      } catch (error) {
+        return { table, ok: false, error };
+      }
+    })
+  );
+
+  const successful = results.filter(result => result.ok);
+  for (const result of successful) applyCloudTable(result.table, result.rows);
+
+  updateStats();
+  renderFolders();
+  refreshAddTagPicker();
+  renderTagFilterBar();
+  renderCollection(searchInput.value);
+  if (document.querySelector('[data-tab="explorer"].active')) renderExplorer();
+  if (document.querySelector('[data-tab="practice"].active')) renderPractice();
+
+  const failed = results.filter(result => !result.ok);
+  return {
+    ok: successful.length > 0 || failed.length === 0,
+    mode: failed.length ? 'partial' : 'download',
+    failed
+  };
+}
+
+async function finishCloudLogin() {
+  if (!supabaseUser || !supabaseClient) return false;
+
+  cloudReady = false;
+  updateAuthUI();
+  setAuthMessage('Signed in. Connecting cloud sync…', 'ok');
+
+  const result = await loadCloudData();
+
+  if (!result.ok) {
+    cloudReady = false;
+    updateAuthUI();
+    setAuthMessage(
+      'Signed in, but cloud sync is temporarily unavailable. Your local data is safe.',
+      'error'
+    );
+    return false;
   }
 
-  try {
-    const results = await Promise.all([
-      downloadTableFromCloud('chunks'),
-      downloadTableFromCloud('tags'),
-      downloadTableFromCloud('folders')
-    ].map(promise => promise.then(data => ({ ok: true, data })).catch(error => ({ ok: false, error }))));
+  cloudReady = true;
+  updateAuthUI();
 
-    const failed = results.find(result => !result.ok);
-    if (failed) {
-      throw failed.error || new Error('One or more cloud tables could not be loaded.');
-    }
-
-    const [cloudChunks, cloudTags, cloudFolders] = results.map(result => result.data);
-
-    const pending = hasPendingCloudChanges();
-    const deletions = getCloudDeletions();
-    const deletedByTable = {
-      chunks: new Set(deletions.filter(d => d.table === 'chunks').map(d => d.id)),
-      tags: new Set(deletions.filter(d => d.table === 'tags').map(d => d.id)),
-      folders: new Set(deletions.filter(d => d.table === 'folders').map(d => d.id))
-    };
-
-    const hasCloudData =
-      cloudChunks.length > 0 ||
-      cloudTags.length > 0 ||
-      cloudFolders.length > 0;
-
-    const hasLocalData =
-      chunks.length > 0 ||
-      tags.length > 0 ||
-      folders.length > 0;
-
-    if (pending) {
-      chunks = mergeById(chunks, cloudChunks.map(migrateChunk), deletedByTable.chunks).map(migrateChunk);
-      tags = mergeById(tags, cloudTags, deletedByTable.tags);
-      folders = mergeById(folders, cloudFolders, deletedByTable.folders);
-
-      localSave(STORAGE_KEY, chunks);
-      localSave(TAGS_KEY, tags);
-      localSave(FOLDERS_KEY, folders);
-
-      updateStats();
-      renderFolders();
-      refreshAddTagPicker();
-      renderTagFilterBar();
-      renderCollection(searchInput.value);
-      if (document.querySelector('[data-tab="explorer"].active')) renderExplorer();
-      if (document.querySelector('[data-tab="practice"].active')) renderPractice();
-
-      return { ok: true, mode: hasCloudData ? 'merge' : 'upload' };
-    }
-
-    if (hasCloudData) {
-      chunks = cloudChunks.map(migrateChunk);
-      tags = cloudTags;
-      folders = cloudFolders;
-
-      localSave(STORAGE_KEY, chunks);
-      localSave(TAGS_KEY, tags);
-      localSave(FOLDERS_KEY, folders);
-
-      updateStats();
-      renderFolders();
-      refreshAddTagPicker();
-      renderTagFilterBar();
-      renderCollection(searchInput.value);
-      if (document.querySelector('[data-tab="explorer"].active')) renderExplorer();
-      if (document.querySelector('[data-tab="practice"].active')) renderPractice();
-
-      return { ok: true, mode: 'download' };
-    }
-
-    if (hasLocalData) {
-      return { ok: true, mode: 'upload' };
-    }
-
-    return { ok: true, mode: 'empty' };
-  } catch (error) {
-    console.error('Supabase cloud load failed:', error);
-    return { ok: false, mode: 'error', error };
+  if (hasPendingCloudChanges() || Object.values(getCloudDirty()).some(ids => ids.length) || getCloudDeletions().length) {
+    const synced = await syncNow();
+    setAuthMessage(
+      synced
+        ? '☁️ Signed in and synced.'
+        : '☁️ Signed in. Cloud sync will retry automatically.',
+      synced ? 'ok' : 'error'
+    );
+  } else {
+    setAuthMessage('☁️ Signed in and synced.', 'ok');
   }
+
+  return true;
 }
 
 async function finishCloudLogin() {
@@ -4938,6 +4951,7 @@ function saveChunks(chunks) {
   );
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(userChunks));
+  markTableDirty('chunks', userChunks);
   scheduleCloudSync();
 }
 
@@ -4948,6 +4962,7 @@ function loadTags() {
 
 function saveTags(tags) {
   localStorage.setItem(TAGS_KEY, JSON.stringify(tags));
+  markTableDirty('tags', tags);
   scheduleCloudSync();
 }
 
@@ -4958,6 +4973,7 @@ function loadFolders() {
 
 function saveFolders(folders) {
   localStorage.setItem(FOLDERS_KEY, JSON.stringify(folders));
+  markTableDirty('folders', folders);
   scheduleCloudSync();
 }
 
