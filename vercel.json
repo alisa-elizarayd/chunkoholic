@@ -1,7 +1,0 @@
-{
-  "functions": {
-    "api/supabase/[...path].js": {
-      "maxDuration": 10
-    }
-  }
-}

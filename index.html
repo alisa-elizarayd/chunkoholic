@@ -98,21 +98,6 @@
     pointer-events: none;
   }
 
-  .version-victory {
-    position: fixed;
-    left: 8px;
-    bottom: 8px;
-    z-index: 9999;
-    font: 700 9px/1 monospace;
-    letter-spacing: 0.4px;
-    color: rgba(212,165,116,0.72);
-    background: rgba(0,0,0,0.28);
-    padding: 3px 5px;
-    border-radius: 4px;
-    pointer-events: none;
-    user-select: none;
-  }
-
   .lang-toggle-container {
     position: absolute;
     top: 20px;
@@ -2772,7 +2757,6 @@
 </style>
 </head>
 <body>
-<div class="version-victory" aria-label="build version">version_victory</div>
 <!-- ==================== AUTH MODAL ==================== -->
 <div class="auth-modal" id="authModal" aria-hidden="true">
   <div class="auth-card">
@@ -4161,7 +4145,7 @@ loadBackground();
 // ==================== SUPABASE CLOUD SYNC ====================
 // Safe browser-side setup: this is the PUBLIC/PUBLISHABLE key only.
 // Never put the Supabase secret/service_role key into this file.
-const SUPABASE_URL = 'https://chunkoholic.netlify.app/api/supabase';
+const SUPABASE_URL = 'https://anpjsztzavzawqizchul.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zuk8Ed2AIjy2G9vZid3ZBQ_OKPklKVe';
 
 // Keep the Supabase client itself boring and standards-compliant.
