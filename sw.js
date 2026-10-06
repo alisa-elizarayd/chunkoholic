@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chunkoholic-v9';
+const CACHE_NAME = 'chunkoholic-v10';
 
 const APP_FILES = [
   './',
@@ -29,6 +29,13 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+  // This worker owns the GitHub Pages app shell only.
+  // Never intercept cross-origin requests such as Supabase Auth/Data API.
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
   if (event.request.method !== 'GET') {
     return;
   }
@@ -36,16 +43,18 @@ self.addEventListener('fetch', event => {
   const isNavigation = event.request.mode === 'navigate' ||
     event.request.destination === 'document';
 
-  // HTML/navigation: network-first so new GitHub Pages deployments are
-  // picked up immediately. If offline, fall back to the cached app shell.
   if (isNavigation) {
     event.respondWith(
       fetch(event.request)
         .then(networkResponse => {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, responseToCache);
-          });
+          if (networkResponse.ok) {
+            const responseToCache = networkResponse.clone();
+            event.waitUntil(
+              caches.open(CACHE_NAME).then(cache =>
+                cache.put(event.request, responseToCache)
+              )
+            );
+          }
           return networkResponse;
         })
         .catch(() =>
@@ -57,7 +66,6 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Other same-origin app resources stay cache-first for fast offline use.
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
       if (cachedResponse) {
@@ -65,18 +73,17 @@ self.addEventListener('fetch', event => {
       }
 
       return fetch(event.request).then(networkResponse => {
-        if (
-          networkResponse.ok &&
-          event.request.url.startsWith(self.location.origin)
-        ) {
+        if (networkResponse.ok) {
           const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, responseToCache);
-          });
+          event.waitUntil(
+            caches.open(CACHE_NAME).then(cache =>
+              cache.put(event.request, responseToCache)
+            )
+          );
         }
 
         return networkResponse;
       });
-    }).catch(() => Response.error())
+    })
   );
 });
